@@ -16,7 +16,6 @@ a3 : dominant
 a4 : séducteur
 """
 
-
 class AttHACK_Mell_spectrogram(torch.utils.data.Dataset):
     def __init__(self, file_path, transform = None):
         """
