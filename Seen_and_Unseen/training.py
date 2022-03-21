@@ -13,7 +13,7 @@ import sys
 def train(FILEPATH):
     EPOCH = 1
     BATCH_SIZE = 30
-    LR = 1e-3
+    LR = 1e-5
 
     base = AttHACK_Mell_spectrogram(FILEPATH)
     data_loader = torch.utils.data.DataLoader(base, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
@@ -46,7 +46,12 @@ def train(FILEPATH):
         writer.flush()
 
 if __name__ == "__main__":
-    if sys.argv[1:][0].lower() == 'ircam':
+    try:
+        args = sys.argv[1:][0].lower()
+    except:
+        args = None
+
+    if args == 'ircam':
         import manage_gpus as gpl
         FILEPATH = r"/net/as-sdb/data/speech/corpus/Att-HACK"
         try:

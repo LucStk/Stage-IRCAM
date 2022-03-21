@@ -52,7 +52,8 @@ def remplissage(x, max, pad = 0):
 
 def collate_fn(x):
     """
-    Prend un liste de matrices en entrée en rajoute (max-x.shape[1]) padd à la fin de toutes
+    Prend un liste de matrices en entrée construit une matrice tridimensionnelle carré
+    en ajoutant un pad de 0
     """
     tmp = [list(i.values()) for i in x]
     tmp = np.expand_dims(np.array(tmp, dtype=object), axis = 2)

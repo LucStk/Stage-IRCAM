@@ -24,7 +24,11 @@ data_base = pd.DataFrame([{**pd.read_pickle(FILEPATH+e), **dec_name_file(e)} for
 print(data_base.head())
 
 #%% Création du dataloader tensorflow
-mell = data_base["mell"].to_numpy()
+mell = np.concatenate([i.flatten for i in data_base["mell"].to_numpy()])
+
+
+
+#%%
 #remplissage
 max_lengths = np.max([x.shape[1] for x in mell])
 def remplissage(x, max, pad = 0):
@@ -35,3 +39,5 @@ def remplissage(x, max, pad = 0):
 mell_remplit = np.array([remplissage(x, max_lengths) for x in mell])
 
 # 
+
+# %%
