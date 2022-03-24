@@ -4,7 +4,6 @@ import pandas as pd
 import tensorflow as tf
 import numpy as np
 from tensorflow.keras.utils import Sequence
-import tensorflow_io as tfio
 from pathlib import Path
 import re
 import math
