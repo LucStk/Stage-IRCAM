@@ -2,7 +2,7 @@ import os
 from pickletools import optimize
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
-from dataloader import AttHACK_Mell_spectrogram, collate_fn
+from utils.dataloader_ESD_tf import ESD_data_generator
 from model import Encodeur, Decodeur
 from torch.utils.tensorboard import SummaryWriter
 import torch
@@ -10,27 +10,32 @@ import tensorboard
 import datetime
 import sys
 
-def train(FILEPATH):
+def train(FILEPATH, use_data_queue = False, test = False):
     EPOCH = 1
     BATCH_SIZE = 30
-    LR = 1e-5
+    LR = 1e-4
+    TEST_EPOCH = 1/10
 
-    base = AttHACK_Mell_spectrogram(FILEPATH)
-    data_loader = torch.utils.data.DataLoader(base, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
-
+    train_dataloader = ESD_data_generator(FILEPATH, BATCH_SIZE, shuffle=True, langage="english")
+    if use_data_queue:
+        data_queue = tf.keras.utils.SequenceEnqueuer(train_dataloader, use_multiprocessing= True)
+        data_queue.start()
+        train_dataloader = data_queue.get()
+    
+    test_dataloader = ESD_data_generator(FILEPATH, 100, type_='test',shuffle=True,langage="english")
+    
     log_dir = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     writer = SummaryWriter(log_dir)
 
     mse = tf.keras.losses.MeanSquaredError()
     optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
-    encodeur = Encodeur()
-    decodeur = Decodeur()
-
+    encodeur = Encodeur(); decodeur = Decodeur()
     cpt = 0
-    for e in range(EPOCH):
-        for batch in data_loader:
+
+    for _ in range(EPOCH):
+        for x,y in train_dataloader:
             cpt += 1
-            x = tf.transpose(batch["data"], perm = [0,2,1])
+            x = tf.transpose(x, perm = [0,2,1])#batch, lenght, n
             with tf.GradientTape() as tape:
                 latent = encodeur(x)
                 out  = decodeur(latent, x.shape[1])
@@ -43,7 +48,19 @@ def train(FILEPATH):
                 writer.flush()
             gradients = tape.gradient(loss, encodeur.trainable_variables+decodeur.trainable_variables)
             optimizer.apply_gradients(zip(gradients, encodeur.trainable_variables + decodeur.trainable_variables))            
-        writer.flush()
+    
+            if test and cpt%(int(len(train_dataloader)*TEST_EPOCH)) == 0:
+                for x,y in test_dataloader:
+                    latent = encodeur(x)
+                    out  = decodeur(latent, x.shape[1])
+
+                    mask = tf.cast(x, tf.bool)
+                    out  = tf.multiply(out, tf.cast(mask, tf.float32))
+                    loss = mse(x,out)
+
+    if use_data_queue:
+        data_queue.stop()
+
 
 if __name__ == "__main__":
     try:
@@ -53,7 +70,7 @@ if __name__ == "__main__":
 
     if args == 'ircam':
         import manage_gpus as gpl
-        FILEPATH = r"/net/as-sdb/data/speech/corpus/Att-HACK"
+        FILEPATH = r"/data2/anasynth_nonbp/sterkers/ESD_Mel/"
         try:
             soft = sys.argv[1:][1]
         except:
@@ -69,6 +86,6 @@ if __name__ == "__main__":
             os.environ["CUDA_VISIBLE_DEVICES"]=""
 
     else:
-        FILEPATH = r"/home/luc/Documents/STAGE_IRCAM/data/melspcs/"
+        FILEPATH = r"/home/luc/Documents/STAGE_IRCAM/data/ESD_Mel/"
 
     train(FILEPATH)
