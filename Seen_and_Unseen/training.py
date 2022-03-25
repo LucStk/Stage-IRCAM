@@ -10,8 +10,18 @@ import tensorboard
 import datetime
 import sys
 
+from tensorflow.compat.v1 import ConfigProto
+from tensorflow.compat.v1 import InteractiveSession
+
+config = ConfigProto()
+config.gpu_options.allow_growth = True
+session = InteractiveSession(config=config)
+
+
 def train(FILEPATH, use_data_queue = False, test = False):
-    EPOCH = 1
+    MEAN_DATASET = -6.0056405
+    STD_DATASET  = 2.4420118
+    EPOCH = 10
     BATCH_SIZE = 30
     LR = 1e-4
     TEST_EPOCH = 1/10
@@ -21,42 +31,60 @@ def train(FILEPATH, use_data_queue = False, test = False):
         data_queue = tf.keras.utils.SequenceEnqueuer(train_dataloader, use_multiprocessing= True)
         data_queue.start()
         train_dataloader = data_queue.get()
-    
-    test_dataloader = ESD_data_generator(FILEPATH, 100, type_='test',shuffle=True,langage="english")
-    
-    log_dir = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    writer = SummaryWriter(log_dir)
+    test_dataloader = ESD_data_generator(FILEPATH, 400, type_='test',shuffle=True,langage="english")
 
-    mse = tf.keras.losses.MeanSquaredError()
+    log_dir        = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    summary_writer = tf.summary.create_file_writer(log_dir)
+
+    mse       = tf.keras.losses.MeanSquaredError()
     optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
-    encodeur = Encodeur(); decodeur = Decodeur()
+    encodeur  = Encodeur(); decodeur = Decodeur()
     cpt = 0
 
-    for _ in range(EPOCH):
+    for e in range(EPOCH):
         for x,y in train_dataloader:
             cpt += 1
+            print(cpt)
+            """
+            PRETRAITEMENT
+            """
             x = tf.transpose(x, perm = [0,2,1])#batch, lenght, n
+            x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
+            """
+            TRAIN
+            """
             with tf.GradientTape() as tape:
-                latent = encodeur(x)
-                out  = decodeur(latent, x.shape[1])
+                latent, step = encodeur(x)
+                out    = decodeur(latent,step)
+                x = x[:,:out.shape[1]] #Crop pour les pertes de reconstruction du decodeur 
+                mask   = tf.cast(x, tf.bool)
+                out    = tf.multiply(out, tf.cast(mask, tf.float32))
+                loss   = mse(x,out)
+                with summary_writer.as_default(): 
+                    tf.summary.scalar('train/loss',loss , step=cpt)
 
-                mask = tf.cast(x, tf.bool)
-                out  = tf.multiply(out, tf.cast(mask, tf.float32))
-                loss = mse(x,out)
-
-                writer.add_scalar("train/loss",loss.numpy(), cpt)
-                writer.flush()
             gradients = tape.gradient(loss, encodeur.trainable_variables+decodeur.trainable_variables)
             optimizer.apply_gradients(zip(gradients, encodeur.trainable_variables + decodeur.trainable_variables))            
-    
+            """
+            TEST
+            """
             if test and cpt%(int(len(train_dataloader)*TEST_EPOCH)) == 0:
-                for x,y in test_dataloader:
-                    latent = encodeur(x)
-                    out  = decodeur(latent, x.shape[1])
-
+                print("test")
+                for x,_ in test_dataloader:
+                    x = tf.transpose(x, perm = [0,2,1])#batch, lenght, n
+                    x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
+                    latent, step = encodeur(x)
+                    out  = decodeur(latent, step)
+                    x = x[:,:out.shape[1]] #Crop pour les pertes de reconstruction du decodeur
                     mask = tf.cast(x, tf.bool)
                     out  = tf.multiply(out, tf.cast(mask, tf.float32))
                     loss = mse(x,out)
+                    with summary_writer.as_default(): 
+                        tf.summary.scalar('test/loss',loss, step=cpt)
+                    break
+
+        decodeur.save_weights(log_dir+"/decodeur_checkpoint/{}".format(e))
+        encodeur.save_weights(log_dir+"/encodeur_checkpoint/{}".format(e))
 
     if use_data_queue:
         data_queue.stop()
@@ -84,8 +112,9 @@ if __name__ == "__main__":
             # there is no GPU available for locking, continue with CPU
             comp_device = "/cpu:0" 
             os.environ["CUDA_VISIBLE_DEVICES"]=""
+        use_data_queue = True
 
     else:
         FILEPATH = r"/home/luc/Documents/STAGE_IRCAM/data/ESD_Mel/"
-
-    train(FILEPATH)
+        use_data_queue = False
+    train(FILEPATH, test = True, use_data_queue= use_data_queue)

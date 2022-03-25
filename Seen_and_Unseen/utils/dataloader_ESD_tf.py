@@ -88,6 +88,11 @@ class ESD_data_generator(Sequence):
 
 if __name__ == "__main__":
     FILEPATH = r"/home/luc/Documents/STAGE_IRCAM/data/ESD_Mel/"
-    base = ESD_data_generator(FILEPATH, batch_size=1000, shuffle=True, langage="english")
+    base = ESD_data_generator(FILEPATH, batch_size=10, shuffle=True, langage="english")
     base_test = ESD_data_generator(FILEPATH, batch_size=10, shuffle=True,type_="test", langage="english")
+    
+    x = base[0][0]
+
+    
     print(len(base))
+
