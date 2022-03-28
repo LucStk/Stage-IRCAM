@@ -1,5 +1,3 @@
-from turtle import backward
-from rx import return_value
 import tensorflow as tf
 import tensorflow.keras.activations  as act
 import tensorflow.keras as ks
@@ -11,8 +9,6 @@ import numpy as np
 
 MAX = 3
 MIN = -14
-
-
 
 class Encodeur(tf.keras.Model):
   def __init__(self):
