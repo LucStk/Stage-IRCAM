@@ -3,11 +3,8 @@ from pickletools import optimize
 from sklearn.utils import shuffle
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
-from utils.dataloader_ESD_tf import ESD_data_generator
+from utilitaires.dataloader_ESD_tf import ESD_data_generator
 from model import Encodeur, Decodeur
-from torch.utils.tensorboard import SummaryWriter
-import torch
-import tensorboard
 import datetime
 import sys
 
