@@ -43,10 +43,11 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
     optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
     encodeur  = Encodeur(); decodeur = Decodeur()
     print("Every thing is ready")
-    for x,_, cpt in enumerate(train_dataloader):
+    for cpt, data  in enumerate(train_dataloader):
         """
         PRETRAITEMENT
         """
+        x, y = data
         x = tf.transpose(x, perm = [0,2,1])#batch, lenght, n
         x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
         """
@@ -98,7 +99,7 @@ if __name__ == "__main__":
         # Get gpu
         import manage_gpus as gpl
         try:
-            soft = sys.argv[1:][1].lower() == 'soft'
+            soft = sys.argv[1:][1].lower()  == 'soft'
         except:
             soft = False
         
