@@ -44,11 +44,9 @@ class Decodeur(tf.keras.Model):
     act_rnn = act.relu
     
     self.lstm_1  = layers.LSTM(64, activation = act_rnn)
-
     # Réseau bi lstm
     self.lstm_fw = layers.LSTM(80, activation = act_rnn)
-    self.lstm_bw = layers.LSTM(80, activation = act_rnn, go_backwards=True)
-    self.bi_lstm = layers.Bidirectional(self.lstm_fw, backward_layer=self.lstm_bw)
+    self.bi_lstm = layers.Bidirectional(self.lstm_fw, return_sequences = True)
     
     self.convT = tf.keras.models.Sequential([
         layers.UpSampling1D(size=2),
@@ -69,8 +67,8 @@ class Decodeur(tf.keras.Model):
         x = self.lstm_1(x)
         ret.append(tf.expand_dims(x, axis = 1))
         x = tf.ones(x_shape)
-
     x = tf.concat(ret, axis = 1)
+    x = self.bi_lstm(x)
     x = self.convT(x)
     x = ks.activations.sigmoid(x)*(MAX-MIN)+MIN
     return x
