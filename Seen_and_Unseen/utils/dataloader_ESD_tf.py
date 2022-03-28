@@ -91,8 +91,17 @@ if __name__ == "__main__":
     base = ESD_data_generator(FILEPATH, batch_size=10, shuffle=True, langage="english")
     base_test = ESD_data_generator(FILEPATH, batch_size=10, shuffle=True,type_="test", langage="english")
     
-    x = base[0][0]
 
-    
+    data_queue = tf.keras.utils.OrderedEnqueuer(base, use_multiprocessing=True)
+    data_queue.start()
+    train_dataloader = data_queue.get()
+
+    for x,y in train_dataloader:
+        print(x)
+        print(y)
+        break
+
+
+    x = base[0][0]
     print(len(base))
 

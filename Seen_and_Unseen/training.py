@@ -1,5 +1,6 @@
 import os
 from pickletools import optimize
+from sklearn.utils import shuffle
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
 from utils.dataloader_ESD_tf import ESD_data_generator
@@ -28,10 +29,13 @@ def train(FILEPATH, use_data_queue = False, test = False):
 
     train_dataloader = ESD_data_generator(FILEPATH, BATCH_SIZE, shuffle=True, langage="english")
     if use_data_queue:
-        data_queue = tf.keras.utils.SequenceEnqueuer(train_dataloader, use_multiprocessing= True)
+        data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=True, shuffle=True)
         data_queue.start()
         train_dataloader = data_queue.get()
+    
     test_dataloader = ESD_data_generator(FILEPATH, 400, type_='test',shuffle=True,langage="english")
+
+
 
     log_dir        = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     summary_writer = tf.summary.create_file_writer(log_dir)
@@ -116,5 +120,5 @@ if __name__ == "__main__":
 
     else:
         FILEPATH = r"/home/luc/Documents/STAGE_IRCAM/data/ESD_Mel/"
-        use_data_queue = False
+        use_data_queue = True
     train(FILEPATH, test = True, use_data_queue= use_data_queue)
