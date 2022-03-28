@@ -115,8 +115,13 @@ if __name__ == "__main__":
             comp_device = "/cpu:0" 
             os.environ["CUDA_VISIBLE_DEVICES"]=""
 
-
-        FILEPATH = r"/data2/anasynth_nonbp/sterkers/ESD_Mel/"
+        try:
+            FILEPATH = r"/data2/anasynth_nonbp/sterkers/ESD_Mel/"
+            os.listdir(FILEPATH)
+        except:
+            FILEPATH = r"/data/anasynth_nonbp/sterkers/ESD_Mel/"
+            os.listdir(FILEPATH)
+        
         BATCH_SIZE = 30
         SHUFFLE    = True
         LANGAGE    = "english"
