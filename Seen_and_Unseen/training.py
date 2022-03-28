@@ -48,9 +48,10 @@ def train(FILEPATH, use_data_queue = False, test = False):
     cpt = 0
     print("Every thing is ready")
     for e in range(EPOCH):
+        print(e)
         for x,y in train_dataloader:
-            cpt += 1
             print(cpt)
+            cpt += 1
             """
             PRETRAITEMENT
             """
