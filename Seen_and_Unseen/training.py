@@ -19,6 +19,7 @@ session = InteractiveSession(config=config)
 def dataloader(FILEPATH, batch_size=30, shuffle=True, langage = 'english', use_data_queue= False):
     data_queue = None
     train_dataloader = ESD_data_generator(FILEPATH, batch_size, shuffle, langage)
+    print("len train", len(train_dataloader))
     if use_data_queue:
         print("begin data_queue")
         data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=True, shuffle=True)
@@ -45,8 +46,7 @@ def train(train_dataloader, test_dataloader, test = False):
     print("Every thing is ready")
     for e in range(EPOCH):
         print('e :',e)
-        for x,y in train_dataloader:
-            print('cpt:',cpt)
+        for x,_ in train_dataloader:
             cpt += 1
             """
             PRETRAITEMENT
@@ -72,6 +72,7 @@ def train(train_dataloader, test_dataloader, test = False):
         TEST
         """
         if test:
+            print('test_time')
             for x,_ in test_dataloader:
                 x = tf.transpose(x, perm = [0,2,1])#batch, lenght, n
                 x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
