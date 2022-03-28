@@ -114,6 +114,7 @@ if __name__ == "__main__":
         try:
             gpu_id_locked = gpl.get_gpu_lock(gpu_device_id=-1, soft=soft)
             comp_device = "/GPU:0"
+            print("Gpu taken")
         except gpl.NoGpuManager:
             print("no gpu manager available - will use all available GPUs", file=sys.stderr)
         except gpl.NoGpuAvailable:
