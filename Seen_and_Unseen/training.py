@@ -19,25 +19,24 @@ config.gpu_options.allow_growth = True
 session = InteractiveSession(config=config)
 
 
-def train(FILEPATH, use_data_queue = False, test = False):
-    print("Training Beging")
-    MEAN_DATASET = -6.0056405
-    STD_DATASET  = 2.4420118
-    EPOCH = 10
-    BATCH_SIZE = 30
-    LR = 1e-4
-    TEST_EPOCH = 1/10
-
-    train_dataloader = ESD_data_generator(FILEPATH, BATCH_SIZE, shuffle=True, langage="english")
+def dataloader(FILEPATH, batch_size=30, shuffle=True, langage = 'english', use_data_queue= False):
+    data_queue = None
+    train_dataloader = ESD_data_generator(FILEPATH, batch_size, shuffle, langage)
     if use_data_queue:
         print("begin data_queue")
         data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
         data_queue.start()
-        train_dataloader = data_queue.get()
-    
-    test_dataloader = ESD_data_generator(FILEPATH, 400, type_='test',shuffle=True,langage="english")
+        train_dataloader = data_queue.get()    
+    test_dataloader = ESD_data_generator(FILEPATH, batch_size=400, langage=langage, type_='test',shuffle=True)
+    return train_dataloader, test_dataloader, data_queue
 
-
+def train(train_dataloader, test_dataloader, test = False):
+    print("Training Beging")
+    MEAN_DATASET = -6.0056405
+    STD_DATASET  = 2.4420118
+    EPOCH = 10
+    LR = 1e-4
+    TEST_EPOCH = 1/10
 
     log_dir        = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     summary_writer = tf.summary.create_file_writer(log_dir)
@@ -93,10 +92,6 @@ def train(FILEPATH, use_data_queue = False, test = False):
         decodeur.save_weights(log_dir+"/decodeur_checkpoint/{}".format(e))
         encodeur.save_weights(log_dir+"/encodeur_checkpoint/{}".format(e))
 
-    if use_data_queue:
-        data_queue.stop()
-
-
 if __name__ == "__main__":
     try:
         args = sys.argv[1:][0].lower()
@@ -105,8 +100,8 @@ if __name__ == "__main__":
 
     if args == 'ircam':
         print("ircam connexion")
+        # Get gpu
         import manage_gpus as gpl
-        FILEPATH = r"/data2/anasynth_nonbp/sterkers/ESD_Mel/"
         try:
             soft = sys.argv[1:][1].lower() == 'soft'
         except:
@@ -122,9 +117,29 @@ if __name__ == "__main__":
             # there is no GPU available for locking, continue with CPU
             comp_device = "/cpu:0" 
             os.environ["CUDA_VISIBLE_DEVICES"]=""
+
+
+        FILEPATH = r"/data2/anasynth_nonbp/sterkers/ESD_Mel/"
+        BATCH_SIZE = 30
+        SHUFFLE    = True
+        LANGAGE    = "english"
+        USE_DATA_QUEUE = True
+        train_dataloader, test_dataloader, data_queue = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
+                                                                    LANGAGE, USE_DATA_QUEUE)
+        
         with tf.device(comp_device) :
-            train(FILEPATH, test = True, use_data_queue=True)
+            train(train_dataloader, test_dataloader, test = True)
+        if data_queue:
+            data_queue.stop()
 
     else:
         FILEPATH = r"/home/luc/Documents/STAGE_IRCAM/data/ESD_Mel/"
-        train(FILEPATH, test = True, use_data_queue=False)
+        BATCH_SIZE = 30
+        SHUFFLE    = True
+        LANGAGE    = "english"
+        USE_DATA_QUEUE = False
+        train_dataloader, test_dataloader, data_queue = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
+                                                                    LANGAGE, USE_DATA_QUEUE)
+        train(train_dataloader, test_dataloader, test = True)
+        if data_queue:
+            data_queue.stop()
