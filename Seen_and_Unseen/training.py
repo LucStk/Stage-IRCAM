@@ -68,23 +68,22 @@ def train(train_dataloader, test_dataloader, test = False):
 
             gradients = tape.gradient(loss, encodeur.trainable_variables+decodeur.trainable_variables)
             optimizer.apply_gradients(zip(gradients, encodeur.trainable_variables + decodeur.trainable_variables))            
-            """
-            TEST
-            """
-            if test and cpt%(int(len(train_dataloader)*TEST_EPOCH)) == 0:
-                print("test")
-                for x,_ in test_dataloader:
-                    x = tf.transpose(x, perm = [0,2,1])#batch, lenght, n
-                    x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
-                    latent, step = encodeur(x)
-                    out  = decodeur(latent, step)
-                    x = x[:,:out.shape[1]] #Crop pour les pertes de reconstruction du decodeur
-                    mask = tf.cast(x, tf.bool)
-                    out  = tf.multiply(out, tf.cast(mask, tf.float32))
-                    loss = mse(x,out)
-                    with summary_writer.as_default(): 
-                        tf.summary.scalar('test/loss',loss, step=cpt)
-                    break
+        """
+        TEST
+        """
+        if test:
+            for x,_ in test_dataloader:
+                x = tf.transpose(x, perm = [0,2,1])#batch, lenght, n
+                x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
+                latent, step = encodeur(x)
+                out  = decodeur(latent, step)
+                x = x[:,:out.shape[1]] #Crop pour les pertes de reconstruction du decodeur
+                mask = tf.cast(x, tf.bool)
+                out  = tf.multiply(out, tf.cast(mask, tf.float32))
+                loss = mse(x,out)
+                with summary_writer.as_default(): 
+                    tf.summary.scalar('test/loss',loss, step=cpt)
+                break
 
         decodeur.save_weights(log_dir+"/decodeur_checkpoint/{}".format(e))
         encodeur.save_weights(log_dir+"/encodeur_checkpoint/{}".format(e))
