@@ -44,6 +44,7 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
     encodeur  = Encodeur(); decodeur = Decodeur()
     print("Every thing is ready")
     for cpt, data  in enumerate(train_dataloader):
+        print(cpt)
         """
         PRETRAITEMENT
         """
