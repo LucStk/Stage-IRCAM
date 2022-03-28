@@ -1,3 +1,4 @@
+from turtle import backward
 import tensorflow as tf
 import tensorflow.keras.activations  as act
 import tensorflow.keras as ks
@@ -9,6 +10,8 @@ import numpy as np
 
 MAX = 3
 MIN = -14
+
+
 
 class Encodeur(tf.keras.Model):
   def __init__(self):
@@ -25,7 +28,7 @@ class Encodeur(tf.keras.Model):
         layers.MaxPool1D(pool_size=2),
         layers.BatchNormalization()
     ])
-    self.lstm_1  = layers.LSTM(128, activation = act_rnn, return_sequences = True)
+    self.lstm_1  = layers.LSTM(128, activation = act_rnn)#, return_sequences = True)
     #Réseau bi-LSTM
     self.lstm_fw = layers.LSTM(200)
     self.lstm_bw = layers.LSTM(200, activation = act_rnn, go_backwards = True)
@@ -37,8 +40,8 @@ class Encodeur(tf.keras.Model):
     x = self.conv(x)
     epoch_lstm = x.shape[1]
     x = self.lstm_1(x)
-    x = self.bi_lstm(x)
-    x = self.latent(x)
+    #x = self.bi_lstm(x)
+    #x = self.latent(x)
     return x, epoch_lstm
 
 class Decodeur(tf.keras.Model):
@@ -49,8 +52,8 @@ class Decodeur(tf.keras.Model):
     self.lstm_1  = layers.LSTM(64, activation = act_rnn)
 
     # Réseau bi lstm
-    self.lstm_fw = layers.LSTM(80, activation = act_rnn, return_sequences=True)
-    self.lstm_bw = layers.LSTM(80, activation = act_rnn, go_backwards=True, return_sequences=True)
+    self.lstm_fw = layers.LSTM(80, activation = act_rnn)
+    self.lstm_bw = layers.LSTM(80, activation = act_rnn, go_backwards=True)
     self.bi_lstm = layers.Bidirectional(self.lstm_fw, backward_layer=self.lstm_bw)
     
     self.convT = tf.keras.models.Sequential([
@@ -72,7 +75,7 @@ class Decodeur(tf.keras.Model):
         x = self.lstm_1(x)
         ret.append(tf.expand_dims(x, axis = 1))
         x = tf.ones(x_shape)
-    x = self.bi_lstm(x)
+
     x = tf.concat(ret, axis = 1)
     x = self.convT(x)
     x = ks.activations.sigmoid(x)*(MAX-MIN)+MIN
