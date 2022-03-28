@@ -24,7 +24,7 @@ def dataloader(FILEPATH, batch_size=30, shuffle=True, langage = 'english', use_d
     train_dataloader = ESD_data_generator(FILEPATH, batch_size, shuffle, langage)
     if use_data_queue:
         print("begin data_queue")
-        data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
+        data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=True, shuffle=True)
         data_queue.start()
         train_dataloader = data_queue.get()    
     test_dataloader = ESD_data_generator(FILEPATH, batch_size=400, langage=langage, type_='test',shuffle=True)
