@@ -90,7 +90,7 @@ if __name__ == "__main__":
     session = InteractiveSession(config=config)
 
 
-    from utils.dataloader_ESD_tf import ESD_data_generator
+    from utilitaires.dataloader_ESD_tf import ESD_data_generator
     encodeur = Encodeur()
     decodeur = Decodeur()
     FILEPATH = r"/home/luc/Documents/STAGE_IRCAM/data/ESD_Mel/"

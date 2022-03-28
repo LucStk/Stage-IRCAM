@@ -19,16 +19,16 @@ session = InteractiveSession(config=config)
 def dataloader(FILEPATH, batch_size=30, shuffle=True, langage = 'english', use_data_queue= False):
     data_queue = None
     train_dataloader = ESD_data_generator(FILEPATH, batch_size, shuffle, langage)
-    print("len train", len(train_dataloader))
+    len_train = len(train_dataloader)
     if use_data_queue:
         print("begin data_queue")
         data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=True, shuffle=True)
         data_queue.start()
         train_dataloader = data_queue.get()    
     test_dataloader = ESD_data_generator(FILEPATH, batch_size=400, langage=langage, type_='test',shuffle=True)
-    return train_dataloader, test_dataloader, data_queue
+    return train_dataloader, test_dataloader, data_queue, len_train
 
-def train(train_dataloader, test_dataloader, test = False):
+def train(train_dataloader, test_dataloader, len_train, test = False):
     print("Training Beging")
     MEAN_DATASET = -6.0056405
     STD_DATASET  = 2.4420118
@@ -42,36 +42,32 @@ def train(train_dataloader, test_dataloader, test = False):
     mse       = tf.keras.losses.MeanSquaredError()
     optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
     encodeur  = Encodeur(); decodeur = Decodeur()
-    cpt = 0
     print("Every thing is ready")
-    for e in range(EPOCH):
-        print('e :',e)
-        for x,_ in train_dataloader:
-            cpt += 1
-            """
-            PRETRAITEMENT
-            """
-            x = tf.transpose(x, perm = [0,2,1])#batch, lenght, n
-            x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
-            """
-            TRAIN
-            """
-            with tf.GradientTape() as tape:
-                latent, step = encodeur(x)
-                out    = decodeur(latent,step)
-                x = x[:,:out.shape[1]] #Crop pour les pertes de reconstruction du decodeur 
-                mask   = tf.cast(x, tf.bool)
-                out    = tf.multiply(out, tf.cast(mask, tf.float32))
-                loss   = mse(x,out)
-                with summary_writer.as_default(): 
-                    tf.summary.scalar('train/loss',loss , step=cpt)
+    for x,_, cpt in enumerate(train_dataloader):
+        """
+        PRETRAITEMENT
+        """
+        x = tf.transpose(x, perm = [0,2,1])#batch, lenght, n
+        x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
+        """
+        TRAIN
+        """
+        with tf.GradientTape() as tape:
+            latent, step = encodeur(x)
+            out    = decodeur(latent,step)
+            x = x[:,:out.shape[1]] #Crop pour les pertes de reconstruction du decodeur 
+            mask   = tf.cast(x, tf.bool)
+            out    = tf.multiply(out, tf.cast(mask, tf.float32))
+            loss   = mse(x,out)
+            with summary_writer.as_default(): 
+                tf.summary.scalar('train/loss',loss , step=cpt)
 
-            gradients = tape.gradient(loss, encodeur.trainable_variables+decodeur.trainable_variables)
-            optimizer.apply_gradients(zip(gradients, encodeur.trainable_variables + decodeur.trainable_variables))            
+        gradients = tape.gradient(loss, encodeur.trainable_variables+decodeur.trainable_variables)
+        optimizer.apply_gradients(zip(gradients, encodeur.trainable_variables + decodeur.trainable_variables))            
         """
         TEST
         """
-        if test:
+        if test and ((cpt+1)%int(TEST_EPOCH*len_train) == 0):
             print('test_time')
             for x,_ in test_dataloader:
                 x = tf.transpose(x, perm = [0,2,1])#batch, lenght, n
@@ -86,8 +82,10 @@ def train(train_dataloader, test_dataloader, test = False):
                     tf.summary.scalar('test/loss',loss, step=cpt)
                 break
 
-        decodeur.save_weights(log_dir+"/decodeur_checkpoint/{}".format(e))
-        encodeur.save_weights(log_dir+"/encodeur_checkpoint/{}".format(e))
+        if (cpt+1) % len_train == 0:
+            print("save")
+            decodeur.save_weights(log_dir+"/decodeur_checkpoint/{}".format(cpt//len_train))
+            encodeur.save_weights(log_dir+"/encodeur_checkpoint/{}".format(cpt//len_train))
 
 if __name__ == "__main__":
     try:
@@ -126,11 +124,11 @@ if __name__ == "__main__":
         SHUFFLE    = True
         LANGAGE    = "english"
         USE_DATA_QUEUE = True
-        train_dataloader, test_dataloader, data_queue = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
+        train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
                                                                     LANGAGE, USE_DATA_QUEUE)
         
         with tf.device(comp_device) :
-            train(train_dataloader, test_dataloader, test = True)
+            train(train_dataloader, test_dataloader, len_train, test = True)
         if data_queue:
             data_queue.stop()
 
@@ -140,8 +138,8 @@ if __name__ == "__main__":
         SHUFFLE    = True
         LANGAGE    = "english"
         USE_DATA_QUEUE = False
-        train_dataloader, test_dataloader, data_queue = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
+        train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
                                                                     LANGAGE, USE_DATA_QUEUE)
-        train(train_dataloader, test_dataloader, test = True)
+        train(train_dataloader, test_dataloader, len_train, test = True)
         if data_queue:
             data_queue.stop()
