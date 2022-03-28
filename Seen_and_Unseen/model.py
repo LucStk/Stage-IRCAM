@@ -6,13 +6,8 @@ import tensorflow.keras.layers as layers
 from tensorflow.keras import Model
 import numpy as np
 
-
-
 MAX = 3
 MIN = -14
-
-
-
 class Encodeur(tf.keras.Model):
   def __init__(self):
     super(Encodeur, self).__init__()
@@ -30,18 +25,17 @@ class Encodeur(tf.keras.Model):
     ])
     self.lstm_1  = layers.LSTM(128, activation = act_rnn, return_sequences = True)
     #Réseau bi-LSTM
-    self.lstm_fw = layers.LSTM(200)
-    self.lstm_bw = layers.LSTM(200, activation = act_rnn, go_backwards = True)
-    self.bi_lstm = layers.Bidirectional(self.lstm_fw, backward_layer=self.lstm_bw)
-    
+    self.lstm_fw = layers.LSTM(200, activation = act_rnn)
+    self.bi_lstm = layers.Bidirectional(self.lstm_fw)
+  
     self.latent  = layers.Dense(64)
 
   def call(self, x):
     x = self.conv(x)
     epoch_lstm = x.shape[1]
-    x = self.lstm_1(x)
+    #x = self.lstm_1(x)
     x = self.bi_lstm(x)
-    x = self.latent(x)
+    #x = self.latent(x)
     return x, epoch_lstm
 
 class Decodeur(tf.keras.Model):

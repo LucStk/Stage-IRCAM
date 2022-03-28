@@ -51,6 +51,7 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
         x, y = data
         x = tf.transpose(x, perm = [0,2,1])#batch, lenght, n
         x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
+        tf.cast(x, tf.float32)
         """
         TRAIN
         """
