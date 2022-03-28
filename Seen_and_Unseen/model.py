@@ -28,7 +28,7 @@ class Encodeur(tf.keras.Model):
         layers.MaxPool1D(pool_size=2),
         layers.BatchNormalization()
     ])
-    self.lstm_1  = layers.LSTM(128, activation = act_rnn)#, return_sequences = True)
+    self.lstm_1  = layers.LSTM(128, activation = act_rnn, return_sequences = True)
     #Réseau bi-LSTM
     self.lstm_fw = layers.LSTM(200)
     self.lstm_bw = layers.LSTM(200, activation = act_rnn, go_backwards = True)
@@ -40,8 +40,8 @@ class Encodeur(tf.keras.Model):
     x = self.conv(x)
     epoch_lstm = x.shape[1]
     x = self.lstm_1(x)
-    #x = self.bi_lstm(x)
-    #x = self.latent(x)
+    x = self.bi_lstm(x)
+    x = self.latent(x)
     return x, epoch_lstm
 
 class Decodeur(tf.keras.Model):
