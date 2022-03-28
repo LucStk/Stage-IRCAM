@@ -31,7 +31,7 @@ def train(FILEPATH, use_data_queue = False, test = False):
     train_dataloader = ESD_data_generator(FILEPATH, BATCH_SIZE, shuffle=True, langage="english")
     if use_data_queue:
         print("begin data_queue")
-        data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=True, shuffle=True)
+        data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
         data_queue.start()
         train_dataloader = data_queue.get()
     
@@ -48,9 +48,9 @@ def train(FILEPATH, use_data_queue = False, test = False):
     cpt = 0
     print("Every thing is ready")
     for e in range(EPOCH):
-        print(e)
+        print('e :',e)
         for x,y in train_dataloader:
-            print(cpt)
+            print('cpt:',cpt)
             cpt += 1
             """
             PRETRAITEMENT
