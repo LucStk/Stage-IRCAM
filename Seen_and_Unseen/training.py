@@ -20,6 +20,7 @@ session = InteractiveSession(config=config)
 
 
 def train(FILEPATH, use_data_queue = False, test = False):
+    print("Training Beging")
     MEAN_DATASET = -6.0056405
     STD_DATASET  = 2.4420118
     EPOCH = 10
@@ -29,6 +30,7 @@ def train(FILEPATH, use_data_queue = False, test = False):
 
     train_dataloader = ESD_data_generator(FILEPATH, BATCH_SIZE, shuffle=True, langage="english")
     if use_data_queue:
+        print("begin data_queue")
         data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=True, shuffle=True)
         data_queue.start()
         train_dataloader = data_queue.get()
@@ -44,7 +46,7 @@ def train(FILEPATH, use_data_queue = False, test = False):
     optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
     encodeur  = Encodeur(); decodeur = Decodeur()
     cpt = 0
-
+    print("Every thing is ready")
     for e in range(EPOCH):
         for x,y in train_dataloader:
             cpt += 1
@@ -101,10 +103,11 @@ if __name__ == "__main__":
         args = None
 
     if args == 'ircam':
+        print("ircam connexion")
         import manage_gpus as gpl
         FILEPATH = r"/data2/anasynth_nonbp/sterkers/ESD_Mel/"
         try:
-            soft = sys.argv[1:][1]
+            soft = sys.argv[1:][1].lower() == 'soft'
         except:
             soft = False
         
