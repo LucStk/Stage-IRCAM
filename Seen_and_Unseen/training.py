@@ -113,15 +113,16 @@ if __name__ == "__main__":
         
         try:
             gpu_id_locked = gpl.get_gpu_lock(gpu_device_id=-1, soft=soft)
+            comp_device = "/GPU:0"
         except gpl.NoGpuManager:
             print("no gpu manager available - will use all available GPUs", file=sys.stderr)
-        except manage_gpus.NoGpuAvailable:
+        except gpl.NoGpuAvailable:
             # there is no GPU available for locking, continue with CPU
             comp_device = "/cpu:0" 
             os.environ["CUDA_VISIBLE_DEVICES"]=""
-        use_data_queue = True
+        with tf.device(comp_device) :
+            train(FILEPATH, test = True, use_data_queue=True)
 
     else:
         FILEPATH = r"/home/luc/Documents/STAGE_IRCAM/data/ESD_Mel/"
-        use_data_queue = True
-    train(FILEPATH, test = True, use_data_queue= use_data_queue)
+        train(FILEPATH, test = True, use_data_queue=False)
