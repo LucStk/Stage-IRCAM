@@ -4,7 +4,7 @@ from sklearn.utils import shuffle
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
 from utilitaires.dataloader_ESD_tf import ESD_data_generator
-from model import Encodeur, Decodeur
+from model import Encodeur, Decodeur, Auto_encodeur_rnn
 import datetime
 import sys
 
@@ -46,7 +46,7 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
     #<-pi[optimizer]
     optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
     #->
-    encodeur  = Encodeur(); decodeur = Decodeur()
+    Model = Auto_encodeur_rnn()
     
     
     print("Every thing is ready")
@@ -63,17 +63,13 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
         TRAIN
         """
         with tf.GradientTape() as tape:
-            latent, step = encodeur(x)
-            out    = decodeur(latent,step)
-            x = x[:,:out.shape[1]] #Crop pour les pertes de reconstruction du decodeur 
-            mask   = tf.cast(x, tf.bool)
-            out    = tf.multiply(out, tf.cast(mask, tf.float32))
+            out = Model(x)
             loss   = mse(x,out)
             with summary_writer.as_default(): 
                 tf.summary.scalar('train/loss',loss , step=cpt)
 
-        gradients = tape.gradient(loss, encodeur.trainable_variables+decodeur.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, encodeur.trainable_variables + decodeur.trainable_variables))            
+        gradients = tape.gradient(loss, Model.trainable_variables)
+        optimizer.apply_gradients(zip(gradients, Model.trainable_variables))            
         """
         TEST
         """
@@ -82,11 +78,7 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
             for x,_ in test_dataloader:
                 x = tf.transpose(x, perm = [0,2,1])#batch, lenght, n
                 x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
-                latent, step = encodeur(x)
-                out  = decodeur(latent, step)
-                x = x[:,:out.shape[1]] #Crop pour les pertes de reconstruction du decodeur
-                mask = tf.cast(x, tf.bool)
-                out  = tf.multiply(out, tf.cast(mask, tf.float32))
+                out  = Model(x)
                 loss = mse(x,out)
                 with summary_writer.as_default(): 
                     tf.summary.scalar('test/loss',loss, step=cpt)
@@ -94,9 +86,7 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
 
         if (cpt+1) % len_train == 0:
             print("save")
-            decodeur.save_weights(log_dir+"/decodeur_checkpoint/{}".format(cpt//len_train))
-            encodeur.save_weights(log_dir+"/encodeur_checkpoint/{}".format(cpt//len_train))
-
+            Model.save_weights(log_dir+"/Auto_encodeur_checkpoint/{}".format(cpt//len_train))
 if __name__ == "__main__":
     try:
         args = sys.argv[1:][0].lower()

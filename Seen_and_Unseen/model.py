@@ -52,7 +52,7 @@ class Decodeur(tf.keras.Model):
     #->pi[activation]
     act_rnn  = act.elu
     act_conv = act.elu
-    #<-
+    #<-   
 
     #->pi[lstm-decodeur]
     self.lstm_1  = layers.GRU(64, activation = act_rnn)
@@ -70,7 +70,6 @@ class Decodeur(tf.keras.Model):
         layers.Conv1DTranspose(80, 5, activation=act_conv)
     ])
     #<-
-
   def call(self, x, step):
     """
     Génére une sortie de taille size à partir d'un espace latent (batch, latent_size)
@@ -89,6 +88,20 @@ class Decodeur(tf.keras.Model):
     x = ks.activations.sigmoid(x)*(MAX-MIN)+MIN
     #<-
     return x
+
+class Auto_encodeur_rnn(tf.keras.Model):
+  def __init__(self):
+    super(Auto_encodeur_rnn, self).__init__()
+    self.encodeur = Encodeur()
+    self.decodeur = Decodeur()
+
+  def call(self,x):
+    latent, step = self.encodeur(x)
+    out  = self.decodeur(latent,step)
+    x    = x[:,:out.shape[1]] #Crop pour les pertes de reconstruction du decodeur 
+    mask = tf.cast(x, tf.bool)
+    out  = tf.multiply(out, tf.cast(mask, tf.float32))
+
 
 if __name__ == "__main__":
     from tensorflow.compat.v1 import ConfigProto
