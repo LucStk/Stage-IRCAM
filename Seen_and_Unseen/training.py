@@ -33,15 +33,22 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
     MEAN_DATASET = -6.0056405
     STD_DATASET  = 2.4420118
     EPOCH = 10
+    #<-pi[learning-rate]
     LR = 1e-5
+    #->
     TEST_EPOCH = 1/10
 
     log_dir        = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     summary_writer = tf.summary.create_file_writer(log_dir)
-
+    #<-pi[loss]
     mse       = tf.keras.losses.MeanSquaredError()
+    #->
+    #<-pi[optimizer]
     optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
+    #->
     encodeur  = Encodeur(); decodeur = Decodeur()
+    
+    
     print("Every thing is ready")
     for cpt, data  in enumerate(train_dataloader):
         print(cpt)
