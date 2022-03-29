@@ -44,7 +44,7 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
     mse       = tf.keras.losses.MeanSquaredError()
     #->
     #<-pi[optimizer]
-    optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
+    optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
     #->
     encodeur  = Encodeur(); decodeur = Decodeur()
     

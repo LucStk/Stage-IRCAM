@@ -13,7 +13,7 @@ class Encodeur(tf.keras.Model):
     super(Encodeur, self).__init__()
     
     #->pi[activation]
-    act_rnn  = act.relu
+    act_rnn  = act.elu
     act_conv = act.elu
     #<-
 
@@ -31,7 +31,7 @@ class Encodeur(tf.keras.Model):
     ])
     #<-
     #->pi[lstm-enco]
-    self.lstm_1  = layers.LSTM(64, activation = act_rnn, return_sequences = True)
+    self.lstm_1  = layers.GRU(64, activation = act_rnn, return_sequences = True)
     self.bi_lstm = layers.Bidirectional(layers.LSTM(128, activation = act_rnn))
     #<-  
     self.latent  = layers.Dense(64)
@@ -50,11 +50,12 @@ class Decodeur(tf.keras.Model):
   def __init__(self):
     super(Decodeur, self).__init__()
     #->pi[activation]
-    act_rnn  = act.relu
+    act_rnn  = act.elu
     act_conv = act.elu
     #<-
+
     #->pi[lstm-decodeur]
-    self.lstm_1  = layers.LSTM(64, activation = act_rnn)
+    self.lstm_1  = layers.GRU(64, activation = act_rnn)
     self.bi_lstm = layers.Bidirectional(layers.LSTM(32, activation = act_rnn, return_sequences=True))
     #<-
     #->pi[deconv]
