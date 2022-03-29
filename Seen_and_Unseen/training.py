@@ -33,7 +33,7 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
     MEAN_DATASET = -6.0056405
     STD_DATASET  = 2.4420118
     EPOCH = 10
-    LR = 1e-4
+    LR = 1e-5
     TEST_EPOCH = 1/10
 
     log_dir        = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
