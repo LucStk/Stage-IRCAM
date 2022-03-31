@@ -63,6 +63,7 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
         TRAIN
         """
         with tf.GradientTape() as tape:
+            x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
             out  = Model(x)
             loss = mse(x,out)
             with summary_writer.as_default(): 
@@ -76,7 +77,6 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
         if test and ((cpt+1)%int(TEST_EPOCH*len_train) == 0):
             print('test_time')
             for x,_ in test_dataloader:
-                x = tf.transpose(x, perm = [0,2,1])#batch, lenght, n
                 x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
                 out  = Model(x)
                 loss = mse(x,out)
@@ -87,6 +87,7 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
         if (cpt+1) % len_train == 0:
             print("save")
             Model.save_weights(log_dir+"/Auto_encodeur_checkpoint/{}".format(cpt//len_train))
+
 if __name__ == "__main__":
     try:
         args = sys.argv[1:][0].lower()

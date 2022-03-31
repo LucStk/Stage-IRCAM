@@ -99,6 +99,10 @@ class Auto_encodeur_rnn(tf.keras.Model):
     self.decodeur = Decodeur()
 
   def call(self,x):
+    """
+    Prend un vecteur de dimension (b, 80, lenght)
+    """
+    x = tf.transpose(x, perm = [0,2,1])#batch, lenght, n
     latent, step = self.encodeur(x)
     out  = self.decodeur(latent,step)
     x    = x[:,:out.shape[1]] #Crop pour les pertes de reconstruction du decodeur 
