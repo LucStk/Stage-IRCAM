@@ -56,15 +56,17 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
         PRETRAITEMENT
         """
         x, y = data
-        x = tf.transpose(x, perm = [0,2,1])#batch, lenght, n
         x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
+        x = tf.transpose(x, perm = [0,2,1])
         tf.cast(x, tf.float32)
         """
         TRAIN
         """
-        with tf.GradientTape() as tape:
-            x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
+        with tf.GradientTape() as tape: #Normalisation
             out  = Model(x)
+            x    = x[:,:out.shape[1]] #Crop pour les pertes de reconstruction du decodeur
+            mask = tf.cast(x, tf.bool)
+            out  = tf.multiply(out, tf.cast(mask, tf.float32))
             loss = mse(x,out)
             with summary_writer.as_default(): 
                 tf.summary.scalar('train/loss',loss , step=cpt)
@@ -78,6 +80,7 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
             print('test_time')
             for x,_ in test_dataloader:
                 x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
+                x = tf.transpose(x, perm = [0,2,1])
                 out  = Model(x)
                 loss = mse(x,out)
                 with summary_writer.as_default(): 
@@ -86,7 +89,7 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
 
         if (cpt+1) % len_train == 0:
             print("save")
-            Model.save_weights(log_dir+"/Auto_encodeur_checkpoint/{}".format(cpt//len_train))
+            Model.save_weights(log_dir, format(cpt//len_train))
 
 if __name__ == "__main__":
     try:
