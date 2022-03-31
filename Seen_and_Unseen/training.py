@@ -63,8 +63,8 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
         TRAIN
         """
         with tf.GradientTape() as tape:
-            out = Model(x)
-            loss   = mse(x,out)
+            out  = Model(x)
+            loss = mse(x,out)
             with summary_writer.as_default(): 
                 tf.summary.scalar('train/loss',loss , step=cpt)
 

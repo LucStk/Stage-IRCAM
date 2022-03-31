@@ -1,4 +1,3 @@
-from turtle import backward
 import tensorflow as tf
 import tensorflow.keras.activations  as act
 import tensorflow.keras as ks
@@ -6,8 +5,12 @@ import tensorflow.keras.layers as layers
 from tensorflow.keras import Model
 import numpy as np
 
+# Valeurs observés dans les data
 MAX = 3
 MIN = -14
+"""
+Decodeur et Encodeur Convolutif/RNN
+"""
 class Encodeur(tf.keras.Model):
   def __init__(self):
     super(Encodeur, self).__init__()
@@ -101,7 +104,23 @@ class Auto_encodeur_rnn(tf.keras.Model):
     x    = x[:,:out.shape[1]] #Crop pour les pertes de reconstruction du decodeur 
     mask = tf.cast(x, tf.bool)
     out  = tf.multiply(out, tf.cast(mask, tf.float32))
+    return out
 
+  def save_weights(self, file, step):
+    self.encodeur.save_weights(file+'/encodeur_checkpoints/'+str(step))
+    self.decodeur.save_weights(file+'/decodeur_checkpoints/'+str(step))
+
+
+  def load_weights(self, file,  step = None):
+    if step is None:
+      f_enco = tf.train.latest_checkpoint(file+'/decodeur_checkpoints')
+      f_deco = tf.train.latest_checkpoint(file+'/encodeur_checkpoints')
+    else:
+      f_enco = file+'/decodeur_checkpoints/'+str(step)
+      f_deco = file+'/encodeur_checkpoints/'+str(step)
+
+    self.encodeur.load_weights(f_enco)
+    self.decodeur.load_weights(f_deco)
 
 if __name__ == "__main__":
     from tensorflow.compat.v1 import ConfigProto
