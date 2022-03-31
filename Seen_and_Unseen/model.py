@@ -107,17 +107,17 @@ class Auto_encodeur_rnn(tf.keras.Model):
     return out
 
   def save_weights(self, file, step):
-    self.encodeur.save_weights(file+'/encodeur_checkpoints/'+str(step))
-    self.decodeur.save_weights(file+'/decodeur_checkpoints/'+str(step))
+    self.encodeur.save_weights(file+'/encodeur_checkpoint/'+str(step))
+    self.decodeur.save_weights(file+'/decodeur_checkpoint/'+str(step))
 
 
   def load_weights(self, file,  step = None):
     if step is None:
-      f_enco = tf.train.latest_checkpoint(file+'/decodeur_checkpoints')
-      f_deco = tf.train.latest_checkpoint(file+'/encodeur_checkpoints')
+      f_enco = tf.train.latest_checkpoint(file+'/decodeur_checkpoint')
+      f_deco = tf.train.latest_checkpoint(file+'/encodeur_checkpoint')
     else:
-      f_enco = file+'/decodeur_checkpoints/'+str(step)
-      f_deco = file+'/encodeur_checkpoints/'+str(step)
+      f_enco = file+'/decodeur_checkpoint/'+str(step)
+      f_deco = file+'/encodeur_checkpoint/'+str(step)
 
     self.encodeur.load_weights(f_enco)
     self.decodeur.load_weights(f_deco)
