@@ -238,7 +238,7 @@ if __name__ == "__main__":
         BATCH_SIZE = 30
         SHUFFLE    = True
         LANGAGE    = "english"
-        USE_DATA_QUEUE = True
+        USE_DATA_QUEUE = False
         load_path = ov.get('--load')
 
         train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
