@@ -139,17 +139,25 @@ if __name__ == "__main__":
     FILEPATH = r"/home/luc/Documents/STAGE_IRCAM/data/ESD_Mel/"
     base = ESD_data_generator(FILEPATH, batch_size=10, shuffle=True, langage="english")
     
-    f = './test/save'
+    def mse(y_hat, y):
+      sub = tf.math.subtract(tf.cast(y, tf.float64),tf.cast(y_hat, tf.float64))
+      r   = tf.math.reduce_sum(tf.math.pow(sub,2))
+      r  /= tf.math.reduce_sum(tf.cast(y != 0, tf.float64))
+      return r
+
     Autoenco = Auto_encodeur_rnn()
     Autoenco.load_weights(os.getcwd()+"/Seen_and_Unseen/backup/logs/20220329-114214")
     #Autoenco.build(tf.TensorShape([10, None, 80]))
+    
     for x, y in base:
-      tmp = (x - MEAN_DATASET)/STD_DATASET 
-      tmp = tf.transpose(tmp, perm = [0,2,1])#batch, lenght, n
-      out = Autoenco(tmp)
-      break
-    Autoenco.save_weights(f,0)
-    Autoenco.load_weights(f)
+      x = (x - MEAN_DATASET)/STD_DATASET 
+      #batch, lenght, n
+      out = Autoenco(x)
+      x    = x[:,:out.shape[1]] #Crop pour les pertes de reconstruction du decodeur
+      mask = tf.cast(x, tf.bool)
+      out  = tf.multiply(out, tf.cast(mask, tf.float32))
+      loss = mse(x, out)
+      print(loss)
 
     for x,y in base:
         tmp = x

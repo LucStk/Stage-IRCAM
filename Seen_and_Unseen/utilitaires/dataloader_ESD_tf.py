@@ -25,7 +25,7 @@ def remplissage(x, max, pad = 0):
     """
     return np.concatenate((x, np.ones((x.shape[0], max-x.shape[1]))*pad), axis = 1)
 
-def collate_fn(x):
+def auto_padding(x):
     """
     Prend un liste de matrices en entrée construit une matrice tridimensionnelle carré
     en ajoutant un pad de 0
@@ -36,12 +36,15 @@ def collate_fn(x):
 
 class ESD_data_generator(Sequence):
     def __init__(self, file_path, batch_size=1, shuffle=True, 
-                 langage=None, type_ = 'train', transform=None,):
+                 langage=None, type_ = 'train', transform=None,
+                 force_padding = None):
         """
         file_path (string) : chemin du fichier ESD_mell 
         transform (callable, optional) : Optional transformation à appliquer
         language : chinese, english ou None, si None prend les deux langues
         type_ : train, test, validation, default train
+        force_padding : None ou int, padding à appliqué sur les batch. 
+                        Si None, padding avec le plus grand échantillions du batch 
         """
         if type_ not in ['train', 'test', 'validation']:
             raise 'InputError {} is not a valide type'.format(type_)
@@ -63,7 +66,7 @@ class ESD_data_generator(Sequence):
         self.file_path  = file_path
         self.transform  = transform
         self.batch_size = batch_size
-
+        self.force_padding = force_padding
         if shuffle:
             np.random.shuffle(self.dataset)
 
@@ -78,12 +81,17 @@ class ESD_data_generator(Sequence):
     def __getitem__(self, idx):
         """
         labels : 0 : Angry, 1 : Happy, 2: Neutral, 3: Sad, 4: Surprise
+        sortie : un batch de la taille (n_batch, lenght, 80)
         """
         list_emotions = ['Angry', "Happy", "Neutral", "Sad", "Surprise"]
         data_name = self.dataset[idx*self.batch_size:(idx+1)*self.batch_size]
         y = [list_emotions.index(re.findall("((?:\w|\.)+)", l)[-3]) for l in data_name]
-        x = collate_fn([pd.read_pickle(f) for f in data_name])
-
+        x = [pd.read_pickle(f) for f in data_name]
+        if self.force_padding is None:
+            x = auto_padding(x)
+        else :
+            x = np.array([remplissage(i, self.force_padding, pad = 0) for i in x])
+        x = tf.transpose(x, perm = [0,2,1])
         return x, y
 
 if __name__ == "__main__":

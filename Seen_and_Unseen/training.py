@@ -7,6 +7,12 @@ from utilitaires.dataloader_ESD_tf import ESD_data_generator
 from model import Encodeur, Decodeur, Auto_encodeur_rnn
 import datetime
 import sys
+import numpy as np
+
+#valeurs obersvé empiriquement, utilisé pour la normalisation
+MEAN_DATASET = -6.0056405
+STD_DATASET  = 2.4420118
+
 
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
@@ -15,6 +21,19 @@ config = ConfigProto()
 config.gpu_options.allow_growth = True
 session = InteractiveSession(config=config)
 
+def normalisation(x):
+    mask = tf.cast(x!=0, tf.float64)
+    x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
+    x = tf.multiply(x, mask)
+    #x = tf.cast(x, tf.float32)
+    return x
+
+def de_normalisation(x):
+    x = tf.cast(x, tf.float64)
+    mask = tf.cast(x!=0, tf.float64)
+    x = (x*STD_DATASET + MEAN_DATASET) #dé-Normalisation
+    x = tf.multiply(x, mask)
+    return x
 
 def dataloader(FILEPATH, batch_size=30, shuffle=True, langage = 'english', use_data_queue= False):
     data_queue = None
@@ -28,10 +47,41 @@ def dataloader(FILEPATH, batch_size=30, shuffle=True, langage = 'english', use_d
     test_dataloader = ESD_data_generator(FILEPATH, batch_size=400, langage=langage, type_='test',shuffle=True)
     return train_dataloader, test_dataloader, data_queue, len_train
 
-def train(train_dataloader, test_dataloader, len_train, test = False):
+class Mel_inverter():
+  def __init__(self):
+    try :
+        from svp_cmds.calc_melspec import calc_melspec
+        from MBExWN_NVoc import mel_inverter, list_models, mbexwn_version
+        from fileio import iovar
+    except:
+        print("Not at IRCAM, Mel_inverter not working")
+    self.MelInv = mel_inverter.MELInverter("SPEECH")
+    self.dd = {'nfft': 2048,
+    'hoplen': 200,
+    'winlen': 800,
+    'nmels': 80,
+    'sr': 16000,
+    'fmin': 0.0,
+    'fmax': 8000.0,
+    'lin_spec_offset': None,
+    'lin_spec_scale': 1,
+    'log_spec_offset': 0,
+    'log_spec_scale': 1,
+    'time_axis': 1,
+    'mell':None}
+
+    def convert(self, x):
+        """
+        Convertion mell spectro to audio
+        """
+        self.dd['mell'] = x
+        log_mel_spectrogram = self.MelInv.scale_mel(self.dd, verbose=False)
+        rec_audio = self.MelInv.synth_from_mel(log_mel_spectrogram)
+        return np.atleast_3d(rec_audio)
+
+
+def train(train_dataloader, test_dataloader, len_train, test = False, ircam = False):
     print("Training Beging")
-    MEAN_DATASET = -6.0056405
-    STD_DATASET  = 2.4420118
     EPOCH = 10
     #<-pi[learning-rate]
     LR = 1e-5
@@ -40,36 +90,52 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
 
     log_dir        = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     summary_writer = tf.summary.create_file_writer(log_dir)
+    if ircam:
+        audio_log_dir        = "audio_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        audio_summary_writer = tf.summary.create_file_writer(audio_log_dir)
+        mel_invert = Mel_inverter()
     #<-pi[loss]
-    mse       = tf.keras.losses.MeanSquaredError()
+    def mse(x_hat, x):
+        x    = x[:,:x_hat.shape[1]]#Crop pour les pertes de reconstruction du decodeur
+        mask = tf.cast(x!=0, tf.float64)
+        sub = tf.math.subtract(tf.cast(x, tf.float64),tf.cast(x_hat, tf.float64))
+        r   = tf.multiply(sub, mask)
+        n   = tf.math.reduce_sum(mask)#nombre de values a comparer
+        r   = tf.math.reduce_sum(tf.math.pow(r,2)) /n
+        return r,n
+
+    def MDC(x_hat, x):
+        x    = x[:,:x_hat.shape[1]]#Crop pour les pertes de reconstruction du decodeur
+        mask = tf.cast(x!=0, tf.float64)
+        n   = tf.math.reduce_sum(mask[:,:,0], axis=1)#nombre de values a comparer
+        sub = tf.math.subtract(tf.cast(x, tf.float64),tf.cast(x_hat, tf.float64))
+        r   = tf.multiply(sub, mask)
+        a = tf.math.pow(r,2)
+        a = tf.math.sqrt(tf.math.reduce_sum(a, axis=2))
+        a = tf.math.reduce_sum(a, axis = 1)/n
+        a *= (10/np.log(10))*np.sqrt(2)*STD_DATASET 
+        return tf.math.reduce_mean(a)
+
     #->
     #<-pi[optimizer]
     optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
     #->
     Model = Auto_encodeur_rnn()
-    
-    
+
     print("Every thing is ready")
     for cpt, data  in enumerate(train_dataloader):
         print(cpt)
-        """
-        PRETRAITEMENT
-        """
         x, y = data
-        x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
-        x = tf.transpose(x, perm = [0,2,1])
-        tf.cast(x, tf.float32)
-        """
-        TRAIN
-        """
+        x = normalisation(x)
         with tf.GradientTape() as tape: #Normalisation
             out  = Model(x)
-            x    = x[:,:out.shape[1]] #Crop pour les pertes de reconstruction du decodeur
-            mask = tf.cast(x, tf.bool)
-            out  = tf.multiply(out, tf.cast(mask, tf.float32))
-            loss = mse(x,out)
-            with summary_writer.as_default(): 
-                tf.summary.scalar('train/loss',loss , step=cpt)
+            loss,n = mse(out, x)
+        mdc  = MDC(out, x)
+
+        #tmp = loss(out_, x_)
+        with summary_writer.as_default(): 
+            tf.summary.scalar('train/loss',loss , step=cpt)
+            tf.summary.scalar('train/mdc',mdc , step=cpt)
 
         gradients = tape.gradient(loss, Model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, Model.trainable_variables))            
@@ -79,12 +145,23 @@ def train(train_dataloader, test_dataloader, len_train, test = False):
         if test and ((cpt+1)%int(TEST_EPOCH*len_train) == 0):
             print('test_time')
             for x,_ in test_dataloader:
-                x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
-                x = tf.transpose(x, perm = [0,2,1])
+                x    = normalisation(x) 
                 out  = Model(x)
-                loss = mse(x,out)
+                loss,n = mse(out, x)
+
+                mcd  = MDC(out, x)
                 with summary_writer.as_default(): 
                     tf.summary.scalar('test/loss',loss, step=cpt)
+                    tf.summary.scalar('test/mcd',mcd , step=cpt)
+
+                if ircam:
+                    x_   = de_normalisation(x)
+                    out_ = de_normalisation(out)
+                    rec_x   = mel_invert.convert(x_[0])
+                    rec_out = mel_invert.convert(out_[0])
+                    with audio_summary_writer.as_default(): 
+                        tf.summary.audio('Original',rec_x, 24000, step=cpt)
+                        tf.summary.audio('Reconstruct',rec_out, 24000,step=cpt)
                 break
 
         if (cpt+1) % len_train == 0:
@@ -132,7 +209,7 @@ if __name__ == "__main__":
                                                                     LANGAGE, USE_DATA_QUEUE)
         
         with tf.device(comp_device) :
-            train(train_dataloader, test_dataloader, len_train, test = True)
+            train(train_dataloader, test_dataloader, len_train, test = True, ircam=True)
         if data_queue:
             data_queue.stop()
 
