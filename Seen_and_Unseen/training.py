@@ -173,7 +173,7 @@ def train(train_dataloader, test_dataloader, len_train,
             if ircam:
                 #c = np.random.choice(range(len(test_dataloader)))
                 c = 0
-                x, y = test_dataloader(c)
+                x, y = test_dataloader[c]
                 x    = normalisation(x)
                 out  = Model(x)
 
