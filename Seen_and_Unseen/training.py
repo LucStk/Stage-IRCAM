@@ -154,7 +154,7 @@ def train(train_dataloader, test_dataloader, len_train,
         """
         if test and ((cpt+1)%int(TEST_EPOCH*len_train) == 0):
             print('test_time')
-            for cpt, data  in enumerate(test_dataloader):
+            for c, data  in enumerate(test_dataloader):
                 x, y = data
                 x    = normalisation(x) 
                 out  = Model(x)
@@ -164,11 +164,13 @@ def train(train_dataloader, test_dataloader, len_train,
                 with summary_writer.as_default(): 
                     tf.summary.scalar('test/loss',loss, step=cpt)
                     tf.summary.scalar('test/mcd',mcd , step=cpt)
-                if cpt == 3:
+                if c == 3:
                     break
             test_dataloader.shuffle()
 
         if (cpt+1) % len_train == 0:
+            print("End batch")
+
             if ircam:
                 #c = np.random.choice(range(len(test_dataloader)))
                 c = 0
@@ -237,7 +239,7 @@ if __name__ == "__main__":
         BATCH_SIZE = 30
         SHUFFLE    = True
         LANGAGE    = "english"
-        USE_DATA_QUEUE = False
+        USE_DATA_QUEUE = True
         load_path = ov.get('--load')
 
         train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
