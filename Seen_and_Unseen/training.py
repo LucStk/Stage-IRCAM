@@ -128,9 +128,9 @@ def train(train_dataloader, test_dataloader, len_train,
     Model = Auto_encodeur_rnn()
     if load_path is not None :
         try:
-            Model.load_weights(load_path)
+            Model.load_weights(os.getcwd()+load_path)
         except:
-            print("Load not succesful from"+os.getcwd())
+            print("Load not succesful from"+os.getcwd()+load_path)
 
     print("Every thing is ready")
     for cpt, data  in enumerate(train_dataloader):
