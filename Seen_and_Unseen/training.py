@@ -92,7 +92,7 @@ def train(train_dataloader, test_dataloader, len_train,
     #<-pi[learning-rate]
     LR = 1e-5
     #->
-    TEST_EPOCH = 1/10
+    TEST_EPOCH = 1/2
 
     log_dir        = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     summary_writer = tf.summary.create_file_writer(log_dir)
@@ -129,6 +129,7 @@ def train(train_dataloader, test_dataloader, len_train,
     if load_path is not None :
         try:
             Model.load_weights(os.getcwd()+load_path)
+            print('model load sucessfuly')
         except:
             print("Load not succesful from"+os.getcwd()+load_path)
 
@@ -164,7 +165,7 @@ def train(train_dataloader, test_dataloader, len_train,
                 with summary_writer.as_default(): 
                     tf.summary.scalar('test/loss',loss, step=cpt)
                     tf.summary.scalar('test/mcd',mcd , step=cpt)
-                if c == 3:
+                if c == 2:
                     break
             test_dataloader.shuffle()
 
