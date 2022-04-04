@@ -42,7 +42,7 @@ def dataloader(FILEPATH, batch_size=30, shuffle=True, langage = 'english', use_d
     len_train = len(train_dataloader)
     if use_data_queue:
         print("begin data_queue")
-        data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=True, shuffle=True)
+        data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
         data_queue.start()
         train_dataloader = data_queue.get()    
     test_dataloader = ESD_data_generator(FILEPATH, batch_size=400, langage=langage, type_='test',shuffle=True)
@@ -168,24 +168,23 @@ def train(train_dataloader, test_dataloader, len_train,
                     break
             test_dataloader.shuffle()
 
-        if (cpt+1) % len_train == 0:
+        if True :#(cpt+1) % len_train == 0:
             print("End batch")
 
             if ircam:
                 #c = np.random.choice(range(len(test_dataloader)))
-                c = 0
+                #i = np.random.choice(range(len(x_)))
+                
+                c = 0;i = 0
                 x, y = test_dataloader[c]
-                x    = normalisation(x)
+                x    = normalisation(tf.expand_dims(x[i],0))
                 out  = Model(x)
 
                 x_   = de_normalisation(x)
                 out_ = de_normalisation(out)
-                #indice = np.random.choice(range(len(x_)))
-                indice = 0
-                mask = tf.cast(x_!=0, tf.float64)
-                mask_lenght = tf.math.reduce_sum(mask[:,:,0], axis=1)
-                rec_x   = mel_inv.convert(x_[indice,:mask_lenght[indice]])
-                rec_out = mel_inv.convert(out_[indice,:mask_lenght[indice]])
+                mask_lenght = int(tf.math.reduce_sum(tf.cast(x[0,:,0]!=0, tf.float64)))
+                rec_x   = mel_inv.convert(x_[:,:mask_lenght])
+                rec_out = mel_inv.convert(out_[:,:mask_lenght])
 
                 with audio_summary_writer.as_default(): 
                     tf.summary.audio('Original',rec_x, 24000, step=cpt)
