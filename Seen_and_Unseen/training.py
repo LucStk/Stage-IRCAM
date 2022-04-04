@@ -49,27 +49,28 @@ def dataloader(FILEPATH, batch_size=30, shuffle=True, langage = 'english', use_d
     return train_dataloader, test_dataloader, data_queue, len_train
 
 class Mel_inverter():
-  def __init__(self):
-    try :
-        from svp_cmds.calc_melspec import calc_melspec
-        from MBExWN_NVoc import mel_inverter, list_models, mbexwn_version
-        from fileio import iovar
-    except:
-        print("Not at IRCAM, Mel_inverter not working")
-    self.MelInv = mel_inverter.MELInverter("SPEECH")
-    self.dd = {'nfft': 2048,
-    'hoplen': 200,
-    'winlen': 800,
-    'nmels': 80,
-    'sr': 16000,
-    'fmin': 0.0,
-    'fmax': 8000.0,
-    'lin_spec_offset': None,
-    'lin_spec_scale': 1,
-    'log_spec_offset': 0,
-    'log_spec_scale': 1,
-    'time_axis': 1,
-    'mell':None}
+    def __init__(self):
+        try :
+            from svp_cmds.calc_melspec import calc_melspec
+            from MBExWN_NVoc import mel_inverter, list_models, mbexwn_version
+            from fileio import iovar
+        except:
+            print("Not at IRCAM, Mel_inverter not working")
+
+        self.MelInv = mel_inverter.MELInverter("SPEECH")
+        self.dd = {'nfft': 2048,
+        'hoplen': 200,
+        'winlen': 800,
+        'nmels': 80,
+        'sr': 16000,
+        'fmin': 0.0,
+        'fmax': 8000.0,
+        'lin_spec_offset': None,
+        'lin_spec_scale': 1,
+        'log_spec_offset': 0,
+        'log_spec_scale': 1,
+        'time_axis': 1,
+        'mell':None}
 
     def convert(self, x):
         """
@@ -97,7 +98,7 @@ def train(train_dataloader, test_dataloader, len_train,
     if ircam:
         audio_log_dir        = "audio_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         audio_summary_writer = tf.summary.create_file_writer(audio_log_dir)
-        mel_invert = Mel_inverter()
+        mel_inv = Mel_inverter()
     #<-pi[loss]
     def mse(x_hat, x):
         x    = x[:,:x_hat.shape[1]]#Crop pour les pertes de reconstruction du decodeur
@@ -166,8 +167,8 @@ def train(train_dataloader, test_dataloader, len_train,
                 if ircam:
                     x_   = de_normalisation(x)
                     out_ = de_normalisation(out)
-                    rec_x   = mel_invert.convert(x_[0])
-                    rec_out = mel_invert.convert(out_[0])
+                    rec_x   = mel_inv.convert(x_[0])
+                    rec_out = mel_inv.convert(out_[0])
                     with audio_summary_writer.as_default(): 
                         tf.summary.audio('Original',rec_x, 24000, step=cpt)
                         tf.summary.audio('Reconstruct',rec_out, 24000,step=cpt)
@@ -222,7 +223,7 @@ if __name__ == "__main__":
         BATCH_SIZE = 30
         SHUFFLE    = True
         LANGAGE    = "english"
-        USE_DATA_QUEUE = True
+        USE_DATA_QUEUE = False
         load_path = ov.get('--load')
 
         train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
