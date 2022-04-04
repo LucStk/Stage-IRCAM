@@ -92,7 +92,7 @@ def train(train_dataloader, test_dataloader, len_train,
     #<-pi[learning-rate]
     LR = 1e-5
     #->
-    TEST_EPOCH = 1/100
+    TEST_EPOCH = 1/10
 
     log_dir        = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     summary_writer = tf.summary.create_file_writer(log_dir)
