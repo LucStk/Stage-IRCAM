@@ -76,7 +76,8 @@ class Mel_inverter():
         """
         Convertion mell spectro to audio
         """
-        self.dd['mell'] = x
+        print(x.shape)
+        self.dd['mell'] = x.numpy().T
         log_mel_spectrogram = self.MelInv.scale_mel(self.dd, verbose=False)
         rec_audio = self.MelInv.synth_from_mel(log_mel_spectrogram)
         return np.atleast_3d(rec_audio)
@@ -91,7 +92,7 @@ def train(train_dataloader, test_dataloader, len_train,
     #<-pi[learning-rate]
     LR = 1e-5
     #->
-    TEST_EPOCH = 1/10
+    TEST_EPOCH = 1/100
 
     log_dir        = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     summary_writer = tf.summary.create_file_writer(log_dir)
