@@ -171,7 +171,7 @@ def train(train_dataloader, test_dataloader, len_train,
         if True :#(cpt+1) % len_train == 0:
             print("End batch")
 
-            if ircam:
+            if True: #ircam
                 #c = np.random.choice(range(len(test_dataloader)))
                 #i = np.random.choice(range(len(x_)))
                 
@@ -183,8 +183,8 @@ def train(train_dataloader, test_dataloader, len_train,
                 x_   = de_normalisation(x)
                 out_ = de_normalisation(out)
                 mask_lenght = int(tf.math.reduce_sum(tf.cast(x[0,:,0]!=0, tf.float64)))
-                rec_x   = mel_inv.convert(x_[:,:mask_lenght])
-                rec_out = mel_inv.convert(out_[:,:mask_lenght])
+                rec_x   = mel_inv.convert(x_[:,:mask_lenght][0].numpy())
+                rec_out = mel_inv.convert(out_[:,:mask_lenght][0].numpy())
 
                 with audio_summary_writer.as_default(): 
                     tf.summary.audio('Original',rec_x, 24000, step=cpt)
