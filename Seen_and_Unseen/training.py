@@ -227,7 +227,11 @@ if __name__ == "__main__":
 
         train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
                                                                     LANGAGE, USE_DATA_QUEUE,)
-        
+        print("test_dataloader")
+        for i in train_dataloader:
+            print("ok")
+            break
+        print("end_test_dataloader")
         with tf.device(comp_device) :
             train(train_dataloader, test_dataloader, len_train, test = True, 
                         ircam=True, load_path=load_path)
