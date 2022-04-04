@@ -106,9 +106,8 @@ def train(train_dataloader, test_dataloader, len_train,
         mask = tf.cast(x!=0, tf.float64)
         sub = tf.math.subtract(tf.cast(x, tf.float64),tf.cast(x_hat, tf.float64))
         r   = tf.multiply(sub, mask)
-        n   = tf.math.reduce_sum(mask)#nombre de values a comparer
-        r   = tf.math.reduce_sum(tf.math.pow(r,2)) /n
-        return r,n
+        r   = tf.math.reduce_sum(tf.math.pow(r,2)) /tf.math.reduce_sum(mask)
+        return r
 
     def MDC(x_hat, x):
         x    = x[:,:x_hat.shape[1]]#Crop pour les pertes de reconstruction du decodeur
@@ -140,7 +139,7 @@ def train(train_dataloader, test_dataloader, len_train,
         x = normalisation(x)
         with tf.GradientTape() as tape: #Normalisation
             out  = Model(x)
-            loss,n = mse(out, x)
+            loss = mse(out, x)
         mdc  = MDC(out, x)
 
         #tmp = loss(out_, x_)
@@ -155,27 +154,42 @@ def train(train_dataloader, test_dataloader, len_train,
         """
         if test and ((cpt+1)%int(TEST_EPOCH*len_train) == 0):
             print('test_time')
-            for x,_ in test_dataloader:
+            for cpt, data  in enumerate(test_dataloader):
+                x, y = data
+                test_dataloader()
                 x    = normalisation(x) 
                 out  = Model(x)
-                loss,n = mse(out, x)
-
+                loss = mse(out, x)
                 mcd  = MDC(out, x)
+                
                 with summary_writer.as_default(): 
                     tf.summary.scalar('test/loss',loss, step=cpt)
                     tf.summary.scalar('test/mcd',mcd , step=cpt)
-
-                if ircam:
-                    x_   = de_normalisation(x)
-                    out_ = de_normalisation(out)
-                    rec_x   = mel_inv.convert(x_[0])
-                    rec_out = mel_inv.convert(out_[0])
-                    with audio_summary_writer.as_default(): 
-                        tf.summary.audio('Original',rec_x, 24000, step=cpt)
-                        tf.summary.audio('Reconstruct',rec_out, 24000,step=cpt)
-                break
+                if cpt == 3:
+                    break
+            test_dataloader.shuffle()
 
         if (cpt+1) % len_train == 0:
+            if ircam:
+                #c = np.random.choice(range(len(test_dataloader)))
+                c = 0
+                x, y = test_dataloader(c)
+                x    = normalisation(x)
+                out  = Model(x)
+
+                x_   = de_normalisation(x)
+                out_ = de_normalisation(out)
+                #indice = np.random.choice(range(len(x_)))
+                indice = 0
+                mask = tf.cast(x_!=0, tf.float64)
+                mask_lenght = tf.math.reduce_sum(mask[:,:,0], axis=1)
+                rec_x   = mel_inv.convert(x_[indice,:mask_lenght[indice]])
+                rec_out = mel_inv.convert(out_[indice,:mask_lenght[indice]])
+
+                with audio_summary_writer.as_default(): 
+                    tf.summary.audio('Original',rec_x, 24000, step=cpt)
+                    tf.summary.audio('Reconstruct',rec_out, 24000,step=cpt)
+
             print("save")
             Model.save_weights(log_dir, format(cpt//len_train))
 
@@ -224,7 +238,7 @@ if __name__ == "__main__":
         BATCH_SIZE = 30
         SHUFFLE    = True
         LANGAGE    = "english"
-        USE_DATA_QUEUE = False
+        USE_DATA_QUEUE = True
         load_path = ov.get('--load')
 
         train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 

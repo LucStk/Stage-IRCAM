@@ -62,19 +62,22 @@ class ESD_data_generator(Sequence):
 
         p = Path(file_path)
         self.dataset = filtre_lg(p.glob('**/{}/*.p'.format(type_)), langage)        
-        self.shuffle    = shuffle
+        self.sh    = shuffle
         self.file_path  = file_path
         self.transform  = transform
         self.batch_size = batch_size
         self.force_padding = force_padding
-        if shuffle:
+        if self.sh:
             np.random.shuffle(self.dataset)
 
     def __len__(self):
         return math.ceil(len(self.dataset)/self.batch_size)
 
+    def shuffle(self):
+        np.random.shuffle(self.dataset)
+
     def on_epoch_end(self):
-        if self.shuffle:
+        if self.sh:
             np.random.shuffle(self.dataset)
 
 
