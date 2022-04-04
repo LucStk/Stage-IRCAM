@@ -156,7 +156,6 @@ def train(train_dataloader, test_dataloader, len_train,
             print('test_time')
             for cpt, data  in enumerate(test_dataloader):
                 x, y = data
-                test_dataloader()
                 x    = normalisation(x) 
                 out  = Model(x)
                 loss = mse(out, x)
