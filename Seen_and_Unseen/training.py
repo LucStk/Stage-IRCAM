@@ -81,7 +81,10 @@ class Mel_inverter():
         return np.atleast_3d(rec_audio)
 
 
-def train(train_dataloader, test_dataloader, len_train, test = False, ircam = False, load_path = None):
+def train(train_dataloader, test_dataloader, len_train, 
+          test = False, 
+          ircam = False, 
+          load_path = None):
     print("Training Beging")
     EPOCH = 10
     #<-pi[learning-rate]
@@ -223,10 +226,11 @@ if __name__ == "__main__":
         load_path = ov.get('--load')
 
         train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
-                                                                    LANGAGE, USE_DATA_QUEUE, load_path)
+                                                                    LANGAGE, USE_DATA_QUEUE,)
         
         with tf.device(comp_device) :
-            train(train_dataloader, test_dataloader, len_train, test = True, ircam=True)
+            train(train_dataloader, test_dataloader, len_train, test = True, 
+                        ircam=True, load_path=load_path)
         if data_queue:
             data_queue.stop()
 
@@ -238,7 +242,7 @@ if __name__ == "__main__":
         USE_DATA_QUEUE = False
         load_path = ov.get('--load')
         train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
-                                                                    LANGAGE, USE_DATA_QUEUE, load_path)
-        train(train_dataloader, test_dataloader, len_train, test = True)
+                                                                    LANGAGE, USE_DATA_QUEUE)
+        train(train_dataloader, test_dataloader, len_train, test = True, load_path=load_path)
         if data_queue:
             data_queue.stop()
