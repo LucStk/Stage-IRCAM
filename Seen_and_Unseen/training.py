@@ -8,6 +8,7 @@ from model import Encodeur, Decodeur, Auto_encodeur_rnn
 import datetime
 import sys
 import numpy as np
+import getopt
 
 #valeurs obersvé empiriquement, utilisé pour la normalisation
 MEAN_DATASET = -6.0056405
@@ -80,7 +81,7 @@ class Mel_inverter():
         return np.atleast_3d(rec_audio)
 
 
-def train(train_dataloader, test_dataloader, len_train, test = False, ircam = False):
+def train(train_dataloader, test_dataloader, len_train, test = False, ircam = False, load_path = None):
     print("Training Beging")
     EPOCH = 10
     #<-pi[learning-rate]
@@ -121,6 +122,11 @@ def train(train_dataloader, test_dataloader, len_train, test = False, ircam = Fa
     optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
     #->
     Model = Auto_encodeur_rnn()
+    if load_path is not None :
+        try:
+            Model.load_weights(load_path)
+        except:
+            print("Load not succesful from"+os.getcwd())
 
     print("Every thing is ready")
     for cpt, data  in enumerate(train_dataloader):
@@ -169,44 +175,55 @@ def train(train_dataloader, test_dataloader, len_train, test = False, ircam = Fa
             Model.save_weights(log_dir, format(cpt//len_train))
 
 if __name__ == "__main__":
-    try:
-        args = sys.argv[1:][0].lower()
-    except:
-        args = None
+    longoptions = ['lock=', 'place=', 'load=']
+    ov, ra = getopt.getopt(sys.argv[1:], "", longoptions)
+    ov = dict(ov)
+    place = ov.get("--place")
 
-    if args == 'ircam':
+    if place == 'ircam':
         print("ircam connexion")
-        # Get gpu
+
         import manage_gpus as gpl
-        try:
-            soft = sys.argv[1:][1].lower()  == 'soft'
-        except:
-            soft = False
+        lck = ov.get("--lock")
+        if lck is None:
+            soft = None
+            print("WARNING : No lock taken")
+        elif lck.lower() == "soft": soft = True
+        elif lck.lower() == "hard": soft = False 
+        else:
+            print("WARNING : No lock taken")
+            soft = None
         
-        try:
-            gpu_id_locked = gpl.get_gpu_lock(gpu_device_id=-1, soft=soft)
-            comp_device = "/GPU:0"
-            print("Gpu taken")
-        except gpl.NoGpuManager:
-            print("no gpu manager available - will use all available GPUs", file=sys.stderr)
-        except gpl.NoGpuAvailable:
-            # there is no GPU available for locking, continue with CPU
-            comp_device = "/cpu:0" 
-            os.environ["CUDA_VISIBLE_DEVICES"]=""
+        if soft is not None:
+            try:
+                gpu_id_locked = gpl.get_gpu_lock(gpu_device_id=-1, soft=soft)
+                comp_device = "/GPU:0"
+                print("Gpu taken")
+            except gpl.NoGpuManager:
+                print("no gpu manager available - will use all available GPUs", file=sys.stderr)
+            except gpl.NoGpuAvailable:
+                # there is no GPU available for locking, continue with CPU
+                comp_device = "/cpu:0" 
+                os.environ["CUDA_VISIBLE_DEVICES"]=""
 
         try:
             FILEPATH = r"/data2/anasynth_nonbp/sterkers/ESD_Mel/"
             os.listdir(FILEPATH)
         except:
-            FILEPATH = r"/data/anasynth_nonbp/sterkers/ESD_Mel/"
-            os.listdir(FILEPATH)
+            try:
+                FILEPATH = r"/data/anasynth_nonbp/sterkers/ESD_Mel/"
+                os.listdir(FILEPATH)
+            except:
+                raise Exception('Data not found')
         
         BATCH_SIZE = 30
         SHUFFLE    = True
         LANGAGE    = "english"
         USE_DATA_QUEUE = True
+        load_path = ov.get('--load')
+
         train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
-                                                                    LANGAGE, USE_DATA_QUEUE)
+                                                                    LANGAGE, USE_DATA_QUEUE, load_path)
         
         with tf.device(comp_device) :
             train(train_dataloader, test_dataloader, len_train, test = True, ircam=True)
@@ -219,8 +236,9 @@ if __name__ == "__main__":
         SHUFFLE    = True
         LANGAGE    = "english"
         USE_DATA_QUEUE = False
+        load_path = ov.get('--load')
         train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
-                                                                    LANGAGE, USE_DATA_QUEUE)
+                                                                    LANGAGE, USE_DATA_QUEUE, load_path)
         train(train_dataloader, test_dataloader, len_train, test = True)
         if data_queue:
             data_queue.stop()
