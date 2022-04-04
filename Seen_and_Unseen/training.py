@@ -168,10 +168,10 @@ def train(train_dataloader, test_dataloader, len_train,
                     break
             test_dataloader.shuffle()
 
-        if True :#(cpt+1) % len_train == 0:
+        if (cpt+1) % len_train == 0:
             print("End batch")
 
-            if True: #ircam
+            if ircam:
                 #c = np.random.choice(range(len(test_dataloader)))
                 #i = np.random.choice(range(len(x_)))
                 
