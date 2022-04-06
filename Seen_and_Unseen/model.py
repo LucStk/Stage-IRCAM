@@ -228,7 +228,7 @@ class Encodeur_conv2D(tf.keras.Model):
         layers.MaxPool2D(pool_size=(3,2)),
         layers.BatchNormalization(),
         
-        layers.Conv2D(128, (5,5), strides=3, activation=act_conv),
+        layers.Conv2D(128, (5,5), activation=act_conv),
         layers.MaxPool2D(pool_size=(4,2)),
     ])
     self.flatten = layers.Flatten()
@@ -245,14 +245,20 @@ class Decodeur_conv2D(tf.keras.Model):
     super(Decodeur_conv2D, self).__init__()
     act_conv = act.elu
     self.convT = tf.keras.models.Sequential([
-        layers.UpSampling1D(size=(4,2)),
-        layers.Conv1DTranspose(128, (5,5), strides = 3, activation=act_conv),
-        layers.BatchNormalization(),
-        
-        layers.UpSampling1D(size=3),
-        layers.Conv1DTranspose(8, 5, activation=act_conv),
-        layers.BatchNormalization(),
-        layers.UpSampling1D(size=3),
+    layers.UpSampling2D(size=(4,2)),
+    layers.Conv2DTranspose(64, (5,5), activation=act_conv),
+    layers.BatchNormalization(),
+    
+    layers.UpSampling2D(size=(4,2)),
+    layers.Conv2DTranspose(32, (7,6), activation=act_conv),
+    layers.BatchNormalization(),
+    
+    layers.UpSampling2D(size=(4,2)),
+    layers.Conv2DTranspose(16, (8,5), activation=act_conv),
+    layers.BatchNormalization(),
+
+    layers.UpSampling2D(size=(4,2)),
+    layers.Conv2DTranspose(1, (12,5), activation=act_conv),
     ])
 
   def call(self, x):
@@ -260,12 +266,65 @@ class Decodeur_conv2D(tf.keras.Model):
     Génére une sortie de taille size à partir d'un espace latent (batch, latent_size)
     """
     x = self.convT(x)
+    x = tf.squeeze(x)
     x = ks.activations.sigmoid(x)*(MAX-MIN)+MIN
     return x
 
+class Discriminateur_conv2D(tf.keras.Model):
+  def __init__(self):
+    super(Encodeur_conv2D, self).__init__()
+    act_conv = act.relu
+    self.conv = tf.keras.models.Sequential([
+        layers.Masking(mask_value=0.),
+        
+        layers.Conv2D(16, (5,4), activation=act_conv),
+        layers.MaxPool2D(pool_size=(4,2)),
+        layers.BatchNormalization(),
+        
+        layers.Conv2D(32, (5,4), activation=act_conv),
+        layers.MaxPool2D(pool_size=(4,2)),
+        layers.BatchNormalization(),
+        
+        layers.Conv2D(64, (5,6), activation=act_conv),
+        layers.MaxPool2D(pool_size=(3,2)),
+        layers.BatchNormalization(),
+
+        layers.Conv2D(128, (11, 6), activation=act_conv)
+    ])
+    self.flatten = layers.Flatten()
+    self.dense  = tf.keras.models.Sequential([
+        layers.Dense(64),
+        layers.Dense(32),
+        layers.Dense(1),])
+
+  def call(self, x):
+    x = self.conv(x)
+    x = self.flatten(x)
+    x = self.dense(x)
+    x = ks.activations.sigmoid(x)
+    return x
+
+
+class Auto_Encodeur_conv2D(Auto_Encodeur_rnn):
+  def __init__(self):
+    super(Auto_Encodeur_conv2D, self).__init__()
+    self.encodeur = Encodeur_conv2D()
+    self.decodeur = Decodeur_conv2D()
+
+  def call(self,x):
+    """
+    Prend un vecteur de dimension (b, lenght, 80)
+    """
+    latent = self.encodeur(x)
+    out    = self.decodeur(latent)
+    return out
 
 
 
+############################################################
+# ##########################################################
+# ##########################################################
+############################################################
 """
 IMPLEMENTATION Papier Seen and Unseen
 """
