@@ -272,7 +272,7 @@ class Decodeur_conv2D(tf.keras.Model):
 
 class Discriminateur_conv2D(tf.keras.Model):
   def __init__(self):
-    super(Encodeur_conv2D, self).__init__()
+    super(Discriminateur_conv2D, self).__init__()
     act_conv = act.relu
     self.conv = tf.keras.models.Sequential([
         layers.Masking(mask_value=0.),
@@ -298,6 +298,7 @@ class Discriminateur_conv2D(tf.keras.Model):
         layers.Dense(1),])
 
   def call(self, x):
+    x = tf.expand_dims(x, axis=-1)
     x = self.conv(x)
     x = self.flatten(x)
     x = self.dense(x)
@@ -315,6 +316,7 @@ class Auto_Encodeur_conv2D(Auto_Encodeur_rnn):
     """
     Prend un vecteur de dimension (b, lenght, 80)
     """
+    x = tf.expand_dims(x, axis=-1)
     latent = self.encodeur(x)
     latent = tf.reshape(latent,(latent.shape[0], 1,1, -1))
     out    = self.decodeur(latent)
