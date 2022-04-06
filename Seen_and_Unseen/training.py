@@ -89,9 +89,7 @@ def train(train_dataloader, test_dataloader, len_train,
           load_path = None):
     print("Training Beging")
     EPOCH = 10
-    #<-pi[learning-rate]
     LR = 1e-5
-    #->
     TEST_EPOCH = 1/2
 
     log_dir        = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -100,7 +98,7 @@ def train(train_dataloader, test_dataloader, len_train,
         audio_log_dir        = "audio_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         audio_summary_writer = tf.summary.create_file_writer(audio_log_dir)
         mel_inv = Mel_inverter()
-    #<-pi[loss]
+
     def mse(x_hat, x):
         x    = x[:,:x_hat.shape[1]]#Crop pour les pertes de reconstruction du decodeur
         mask = tf.cast(x!=0, tf.float64)
@@ -121,10 +119,7 @@ def train(train_dataloader, test_dataloader, len_train,
         a *= (10/np.log(10))*np.sqrt(2)*STD_DATASET 
         return tf.math.reduce_mean(a)
 
-    #->
-    #<-pi[optimizer]
     optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
-    #->
     Model = Auto_encodeur_rnn()
     if load_path is not None :
         try:
@@ -236,7 +231,7 @@ if __name__ == "__main__":
             except:
                 raise Exception('Data not found')
         
-        BATCH_SIZE = 30
+        BATCH_SIZE = 256
         SHUFFLE    = True
         LANGAGE    = "english"
         USE_DATA_QUEUE = True

@@ -9,38 +9,42 @@ import numpy as np
 MAX = 3
 MIN = -14
 """
-Decodeur et Encodeur Convolutif/RNN
+Decodeur et Encodeur_rnn Convolutif/RNN
 """
-class Encodeur(tf.keras.Model):
+
+def conv_shape(Hin, kernel, p_max = 1, stride =1, pad = 0, dil = 1,):
+  a = Hin + 2*pad -dil*(kernel-1) -1
+  a = np.floor((a/stride)+1)
+  a = np.floor(a/p_max)
+  return a
+
+def deconv_shape(rows, strides, k, p = 0):
+  return (rows-1)*strides + k - 2*p
+
+
+class Encodeur_rnn(tf.keras.Model):
   def __init__(self):
-    super(Encodeur, self).__init__()
-    
-    #->pi[activation]
+    super(Encodeur_rnn, self).__init__()
     act_rnn  = act.elu
     act_conv = act.elu
-    #<-
 
-    #->pi[conv]
     self.conv = tf.keras.models.Sequential([
         layers.Masking(mask_value=0.),
         layers.Conv1D(8, 5, activation=act_conv),
-        layers.MaxPool1D(pool_size=3),
+        layers.MaxPool1D(pool_size=2),
         layers.BatchNormalization(),
         layers.Conv1D(16, 5, activation=act_conv),
-        layers.MaxPool1D(pool_size=3),
+        layers.MaxPool1D(pool_size=2),
         layers.BatchNormalization(),
         layers.Conv1D(32, 5, activation=act_conv),
-        layers.MaxPool1D(pool_size=3),
+        layers.MaxPool1D(pool_size=2),
     ])
-    #<-
-    #->pi[lstm-enco]
     self.lstm_1  = layers.GRU(64, activation = act_rnn, return_sequences = True)
-    self.bi_lstm = layers.Bidirectional(layers.LSTM(128, activation = act_rnn))
-    #<-  
+    self.bi_lstm = layers.Bidirectional(layers.LSTM(128, activation = act_rnn))  
     self.latent  = layers.Dense(64)
 
   def call(self, x):
-    #->pi[encodeur-call]
+    #->pi[Encodeur_rnn-call]
     x = self.conv(x)
     epoch_lstm = x.shape[1]
     x = self.lstm_1(x)
@@ -49,15 +53,15 @@ class Encodeur(tf.keras.Model):
     #<-
     return x, epoch_lstm
 
-class Decodeur(tf.keras.Model):
+class Decodeur_rnn(tf.keras.Model):
   def __init__(self):
-    super(Decodeur, self).__init__()
+    super(Decodeur_rnn, self).__init__()
     #->pi[activation]
     act_rnn  = act.elu
     act_conv = act.elu
     #<-   
 
-    #->pi[lstm-decodeur]
+    #->pi[lstm-Decodeur_rnn]
     self.lstm_1  = layers.GRU(64, activation = act_rnn)
     self.bi_lstm = layers.Bidirectional(layers.LSTM(32, activation = act_rnn, return_sequences=True))
     #<-
@@ -77,7 +81,7 @@ class Decodeur(tf.keras.Model):
     """
     Génére une sortie de taille size à partir d'un espace latent (batch, latent_size)
     """
-    #<-pi[decodeur-call]
+    #<-pi[Decodeur_rnn-call]
     x = tf.expand_dims(x, axis = 1)
     x_shape = x.shape
     ret = []
@@ -92,11 +96,11 @@ class Decodeur(tf.keras.Model):
     #<-
     return x
 
-class Auto_encodeur_rnn(tf.keras.Model):
+class Auto_Encodeur_rnn(tf.keras.Model):
   def __init__(self):
-    super(Auto_encodeur_rnn, self).__init__()
-    self.encodeur = Encodeur()
-    self.decodeur = Decodeur()
+    super(Auto_Encodeur_rnn, self).__init__()
+    self.encodeur = Encodeur_rnn()
+    self.decodeur = Decodeur_rnn()
 
   def call(self,x):
     """
@@ -107,20 +111,248 @@ class Auto_encodeur_rnn(tf.keras.Model):
     return out
 
   def save_weights(self, file, step):
-    self.encodeur.save_weights(file+'/encodeur_checkpoint/'+str(step))
+    self.encodeur.save_weights(file+'/Encodeur_checkpoint/'+str(step))
     self.decodeur.save_weights(file+'/decodeur_checkpoint/'+str(step))
 
 
   def load_weights(self, file,  step = None):
     if step is None:
-      f_enco = tf.train.latest_checkpoint(file+'/encodeur_checkpoint')
+      f_enco = tf.train.latest_checkpoint(file+'/Encodeur_checkpoint')
       f_deco = tf.train.latest_checkpoint(file+'/decodeur_checkpoint')
     else:
-      f_enco = file+'/encodeur_checkpoint/'+str(step)
+      f_enco = file+'/Encodeur_checkpoint/'+str(step)
       f_deco = file+'/dncodeur_checkpoint/'+str(step)
 
     self.encodeur.load_weights(f_enco)
     self.decodeur.load_weights(f_deco)
+
+
+"""
+Auto-enco-rnn-conv2D
+"""
+class Encodeur_rnn2D(tf.keras.Model):
+  def __init__(self):
+    super(Encodeur_rnn2D, self).__init__()
+    act_rnn  = act.elu
+    act_conv = act.elu
+
+    self.conv = tf.keras.models.Sequential([
+        layers.Masking(mask_value=0.),
+
+        layers.Conv2D(8, 5, activation=act_conv),
+        layers.MaxPool2D(pool_size=2),
+        layers.BatchNormalization(),
+
+        layers.Conv2D(16, 5, activation=act_conv),
+        layers.MaxPool2D(pool_size=2),
+        layers.BatchNormalization(),
+        
+        layers.Conv2D(32, 5, activation=act_conv),
+        layers.MaxPool2D(pool_size=2),
+    ])
+    self.lstm_1  = layers.GRU(64, activation = act_rnn, return_sequences = True)
+    self.bi_lstm = layers.Bidirectional(layers.LSTM(128, activation = act_rnn))  
+    self.latent  = layers.Dense(64)
+
+  def call(self, x):
+    #->pi[Encodeur_rnn-call]
+    x = self.conv(x)
+    epoch_lstm = x.shape[1]
+    #x = self.lstm_1(x)
+    #x = self.bi_lstm(x)
+    #x = self.latent(x)
+    #<-
+    return x, epoch_lstm
+
+class Decodeur_rnn2D(tf.keras.Model):
+  def __init__(self):
+    super(Decodeur_rnn2D, self).__init__()
+    #->pi[activation]
+    act_rnn  = act.elu
+    act_conv = act.elu
+    #<-   
+
+    #->pi[lstm-Decodeur_rnn]
+    self.lstm_1  = layers.GRU(64, activation = act_rnn)
+    self.bi_lstm = layers.Bidirectional(layers.LSTM(32, activation = act_rnn, return_sequences=True))
+    #<-
+    #->pi[deconv]
+    self.convT = tf.keras.models.Sequential([
+        layers.UpSampling1D(size=3),
+        layers.Conv1DTranspose(16, 5, activation=act_conv),
+        layers.BatchNormalization(),
+        layers.UpSampling1D(size=3),
+        layers.Conv1DTranspose(8, 5, activation=act_conv),
+        layers.BatchNormalization(),
+        layers.UpSampling1D(size=3),
+        layers.Conv1DTranspose(80, 5, activation=act_conv)
+    ])
+    #<-
+  def call(self, x, step):
+    """
+    Génére une sortie de taille size à partir d'un espace latent (batch, latent_size)
+    """
+    #<-pi[Decodeur_rnn-call]
+    x = tf.expand_dims(x, axis = 1)
+    x_shape = x.shape
+    ret = []
+    for _ in range(step): #Expand dimension
+        x = self.lstm_1(x)
+        ret.append(tf.expand_dims(x, axis = 1))
+        x = tf.ones(x_shape)
+    x = tf.concat(ret, axis = 1)
+    x = self.bi_lstm(x)
+    x = self.convT(x)
+    x = ks.activations.sigmoid(x)*(MAX-MIN)+MIN
+    #<-
+    return x
+"""
+Encodeur conv2D
+"""
+class Encodeur_conv2D(tf.keras.Model):
+  def __init__(self):
+    super(Encodeur_conv2D, self).__init__()
+    act_conv = act.relu
+    self.conv = tf.keras.models.Sequential([
+        layers.Masking(mask_value=0.),
+        
+        layers.Conv2D(16, (5,4), activation=act_conv),
+        layers.MaxPool2D(pool_size=(4,2)),
+        layers.BatchNormalization(),
+        
+        layers.Conv2D(32, (5,4), activation=act_conv),
+        layers.MaxPool2D(pool_size=(4,2)),
+        layers.BatchNormalization(),
+        
+        layers.Conv2D(64, (5,6), activation=act_conv),
+        layers.MaxPool2D(pool_size=(3,2)),
+        layers.BatchNormalization(),
+        
+        layers.Conv2D(128, (5,5), strides=3, activation=act_conv),
+        layers.MaxPool2D(pool_size=(4,2)),
+    ])
+    self.flatten = layers.Flatten()
+    self.latent  = layers.Dense(128+256+1)
+
+  def call(self, x):
+    x = self.conv(x)
+    x = self.flatten(x)
+    x = self.latent(x)
+    return x
+
+class Decodeur_conv2D(tf.keras.Model):
+  def __init__(self):
+    super(Decodeur_conv2D, self).__init__()
+    act_conv = act.elu
+    self.convT = tf.keras.models.Sequential([
+        layers.UpSampling1D(size=(4,2)),
+        layers.Conv1DTranspose(128, (5,5), strides = 3, activation=act_conv),
+        layers.BatchNormalization(),
+        
+        layers.UpSampling1D(size=3),
+        layers.Conv1DTranspose(8, 5, activation=act_conv),
+        layers.BatchNormalization(),
+        layers.UpSampling1D(size=3),
+    ])
+
+  def call(self, x):
+    """
+    Génére une sortie de taille size à partir d'un espace latent (batch, latent_size)
+    """
+    x = self.convT(x)
+    x = ks.activations.sigmoid(x)*(MAX-MIN)+MIN
+    return x
+
+
+
+
+"""
+IMPLEMENTATION Papier Seen and Unseen
+"""
+class Encodeur_conv(tf.keras.Model):
+  def __init__(self):
+    super(Encodeur_conv, self).__init__()
+    act_conv = act.relu
+    self.conv = tf.keras.models.Sequential([
+        layers.Masking(mask_value=0.),
+        
+        layers.Conv1D(16, 7, strides=2, activation=act_conv),
+        layers.BatchNormalization(),
+        
+        layers.Conv1D(32, 7, strides=2, activation=act_conv),
+        layers.BatchNormalization(),
+        
+        layers.Conv1D(64, 7, strides=3, activation=act_conv),
+        layers.BatchNormalization(),
+        
+        layers.Conv1D(128, 7, strides=3, activation=act_conv),
+        layers.BatchNormalization(),
+        
+        layers.Conv1D(256, 7, strides=3, activation=act_conv),
+    ])
+    self.latent  = layers.Dense(128+256+1)
+
+  def call(self, x):
+    x = self.conv(x)
+    x = self.latent(x)
+    return x
+
+class Decodeur_conv(tf.keras.Model):
+  def __init__(self):
+    super(Decodeur_conv, self).__init__()
+    act_conv = act.elu
+    self.convT = tf.keras.models.Sequential([
+        layers.Conv1DTranspose(32, 9, strides=3, activation=act_conv),
+        layers.BatchNormalization(),
+
+        layers.Conv1DTranspose(16, 7, strides=3, activation=act_conv),
+        layers.BatchNormalization(),
+        
+        layers.Conv1DTranspose(8, 7, strides=3, activation=act_conv),
+        layers.BatchNormalization(),
+        
+        layers.Conv1DTranspose(80, 647, strides=1, activation=act_conv),
+    ])    
+  def call(self, x):
+    """
+    Génére une sortie de taille size à partir d'un espace latent (batch, latent_size)
+    """
+    x = self.convT(x)
+    x = ks.activations.sigmoid(x)*(MAX-MIN)+MIN
+    return x
+
+
+class Discriminator_conv(tf.keras.Model):
+  def __init__(self):
+    super(Discriminator_conv, self).__init__()
+    
+    act_conv = act.elu
+    self.conv = tf.keras.models.Sequential([
+      layers.Masking(mask_value=0.),
+
+      layers.Conv1D(7, 7, strides=3, activation=act_conv),
+      layers.BatchNormalization(),
+
+      layers.Conv1D(7, 7, strides=3, activation=act_conv),
+      layers.BatchNormalization(),
+      layers.Conv1D(115, 7, strides=3, activation=act_conv),
+    ])
+    self.h1  = layers.Dense(1)
+
+
+  def call(self, x, step):
+    """
+    Génére une sortie de taille size à partir d'un espace latent (batch, latent_size)
+    """
+    x = self.convT(x)
+    x = self.h1(x)
+    x = ks.activations.sigmoid(x)
+    return x
+
+
+
+
+
 
 if __name__ == "__main__":
     from tensorflow.compat.v1 import ConfigProto
@@ -134,8 +366,8 @@ if __name__ == "__main__":
 
 
     from utilitaires.dataloader_ESD_tf import ESD_data_generator
-    encodeur = Encodeur()
-    decodeur = Decodeur()
+    Encodeur_rnn = Encodeur_rnn()
+    decodeur = Decodeur_rnn()
     FILEPATH = r"/home/luc/Documents/STAGE_IRCAM/data/ESD_Mel/"
     base = ESD_data_generator(FILEPATH, batch_size=10, shuffle=True, langage="english")
     
@@ -145,7 +377,7 @@ if __name__ == "__main__":
       r  /= tf.math.reduce_sum(tf.cast(y != 0, tf.float64))
       return r
 
-    Autoenco = Auto_encodeur_rnn()
+    Autoenco = Auto_Encodeur_rnn()
     Autoenco.load_weights(os.getcwd()+"/Seen_and_Unseen/backup/logs/20220329-114214")
     #Autoenco.build(tf.TensorShape([10, None, 80]))
     
@@ -158,11 +390,3 @@ if __name__ == "__main__":
       out  = tf.multiply(out, tf.cast(mask, tf.float32))
       loss = mse(x, out)
       print(loss)
-
-    for x,y in base:
-        tmp = x
-        tmp = tf.transpose(tmp, perm = [0,2,1])#batch, lenght, n
-        out, step = encodeur(tmp)
-        rec = decodeur(out, step)
-        print(rec.shape, tmp.shape)
-    print("ok")    
