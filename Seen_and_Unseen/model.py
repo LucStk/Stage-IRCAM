@@ -316,6 +316,7 @@ class Auto_Encodeur_conv2D(Auto_Encodeur_rnn):
     Prend un vecteur de dimension (b, lenght, 80)
     """
     latent = self.encodeur(x)
+    latent = tf.reshape(latent,(latent.shape[0], 1,1, -1))
     out    = self.decodeur(latent)
     return out
 
