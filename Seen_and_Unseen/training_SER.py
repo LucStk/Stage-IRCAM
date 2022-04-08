@@ -71,11 +71,11 @@ def train(train_dataloader, test_dataloader, len_train,
             y_hat  = Model(x)
             l = loss(y_,y_hat)
 
-        #v = tf.math.argmax(y_hat)
-        #acc = np.mean(y == v)
+        v = tf.math.argmax(y_hat)
+        acc = np.mean(y == v)
         with summary_writer.as_default():
             tf.summary.scalar('train/loss',l, step=cpt)
-            #tf.summary.scalar('train/acc',acc, step=cpt)
+            tf.summary.scalar('train/acc',acc, step=cpt)
 
 
         gradients = tape.gradient(l, Model.trainable_variables)
