@@ -52,7 +52,7 @@ def train(train_dataloader, test_dataloader, len_train,
     log_dir        = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     summary_writer = tf.summary.create_file_writer(log_dir)
     
-    optimizer = tf.keras.optimizers.Adams(learning_rate = LR)
+    optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
     Model = SER()
     if load_path is not None :
         try:
