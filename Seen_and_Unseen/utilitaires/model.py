@@ -432,8 +432,9 @@ class Discriminator_conv(tf.keras.Model):
 class SER(tf.keras.Model):
   def __init__(self):
     super(SER, self).__init__()
-    act_rnn  = act.relu
+    act_rnn  = act.elu
     act_conv = act.relu
+    act_dens = act.relu
 
     self.conv = tf.keras.models.Sequential([
         layers.Masking(mask_value=0.),
@@ -457,7 +458,7 @@ class SER(tf.keras.Model):
  
     self.W = layers.Dense(1)
     self.H = tf.keras.models.Sequential([
-      layers.Dense(32),
+      layers.Dense(32, activation=act_dens),
       layers.Dense(5),
     ])#Nombre d'étiquettes
 
