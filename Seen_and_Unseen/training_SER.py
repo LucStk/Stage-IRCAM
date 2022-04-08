@@ -45,7 +45,7 @@ def train(train_dataloader, test_dataloader, len_train,
           ircam = False, 
           load_path = None):
     print("Training Beging")
-    EPOCH = 30
+    EPOCH = 100
     LR = 1e-4
     TEST_EPOCH = 1/2
 
@@ -148,7 +148,7 @@ if __name__ == "__main__":
             except:
                 raise Exception('Data not found')
         
-        BATCH_SIZE = 256
+        BATCH_SIZE = 56
         SHUFFLE    = True
         LANGAGE    = "english"
         USE_DATA_QUEUE = True
