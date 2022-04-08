@@ -61,19 +61,22 @@ def train(train_dataloader, test_dataloader, len_train,
         except:
             print("Load not succesful from"+os.getcwd()+load_path)
 
-    loss = tf.keras.BinaryCrossentropy(from_logits = True)
+    loss = tf.keras.losses.BinaryCrossentropy(from_logits = True)
     print("Every thing is ready")
-    for cpt, data  in enumerate(train_dataloader):
+    for cpt, (x,y) in enumerate(train_dataloader):
         print(cpt)
-        x, y = data
+        y_ = tf.one_hot(y,5)
         x = normalisation(x)
         with tf.GradientTape() as tape: #Normalisation
-            out  = Model(x)
-            l = loss(y,out)
+            y_hat  = Model(x)
+            l = loss(y_,y_hat)
 
-        #tmp = loss(out_, x_)
-        with summary_writer.as_default(): 
+        v = tf.math.argmax(y_hat)
+        acc = np.mean(y == v)
+        with summary_writer.as_default():
             tf.summary.scalar('train/loss',l, step=cpt)
+            tf.summary.scalar('train/acc',l, step=cpt)
+
 
         gradients = tape.gradient(loss, Model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, Model.trainable_variables))            
@@ -83,12 +86,17 @@ def train(train_dataloader, test_dataloader, len_train,
         if test and ((cpt+1)%int(TEST_EPOCH*len_train) == 0):
             print('test_time')
             for c, (x,y)  in enumerate(test_dataloader):
+                y_    = tf.one_hot(y,5)
                 x     = normalisation(x) 
                 y_hat = Model(x)
-                l = loss(y,y_hat)
+                l = loss(y_,y_hat)
                 
+                v = tf.math.argmax(y_hat)
+                acc = np.mean(y == v)
+
                 with summary_writer.as_default(): 
                     tf.summary.scalar('test/loss',l, step=cpt)
+                    tf.summary.scalar('test/acc',l, step=cpt)
                 if c == 2:
                     break
             test_dataloader.shuffle()
