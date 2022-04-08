@@ -71,9 +71,6 @@ def train(train_dataloader, test_dataloader, len_train,
             y_hat  = Model(x)
             l = loss(y_,y_hat)
         ymax = tf.math.argmax(y_hat, axis = 1)
-        print(y)
-        print(ymax)
-        print()
         acc = np.mean(y == ymax)
         with summary_writer.as_default():
             tf.summary.scalar('train/loss',l, step=cpt)
