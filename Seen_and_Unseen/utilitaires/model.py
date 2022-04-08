@@ -467,14 +467,9 @@ class SER(tf.keras.Model):
     x = tf.reshape(x, (x.shape[0], -1, 128))
     #x = self.lstm_1(x)
     x = self.bi_lstm(x)
-    print(x.shape)
-    x = x[:,-1]
-
-    """
     alpha = tf.keras.activations.softmax(self.W(x), axis = 1)
     alpha = tf.repeat(alpha, repeats=x.shape[-1], axis = -1)
-    x = tf.math.reduce_sum(tf.math.multiply(x,alpha), axis = 1)
-    """
+    x = tf.math.reduce_sum(tf.math.multiply(x,alpha), axis = 1)  
     x = self.H(x)
     #x = tf.keras.activations.softmax(x)
     
