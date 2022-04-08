@@ -70,9 +70,11 @@ def train(train_dataloader, test_dataloader, len_train,
         with tf.GradientTape() as tape: #Normalisation
             y_hat  = Model(x)
             l = loss(y_,y_hat)
-
-        v = tf.math.argmax(y_hat)
-        acc = np.mean(y == v)
+        ymax = tf.math.argmax(y_hat)
+        print(y)
+        print(ymax)
+        print()
+        acc = np.mean(y == ymax)
         with summary_writer.as_default():
             tf.summary.scalar('train/loss',l, step=cpt)
             tf.summary.scalar('train/acc',acc, step=cpt)
@@ -91,8 +93,7 @@ def train(train_dataloader, test_dataloader, len_train,
                 y_hat = Model(x)
                 l = loss(y_,y_hat)
                 
-                v = tf.math.argmax(y_hat)
-                acc = np.mean(y == v)
+                acc = np.mean(y == tf.math.argmax(y_hat))
 
                 with summary_writer.as_default(): 
                     tf.summary.scalar('test/loss',l, step=cpt)
