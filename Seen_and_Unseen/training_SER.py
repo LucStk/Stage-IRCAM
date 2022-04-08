@@ -75,10 +75,10 @@ def train(train_dataloader, test_dataloader, len_train,
         acc = np.mean(y == v)
         with summary_writer.as_default():
             tf.summary.scalar('train/loss',l, step=cpt)
-            tf.summary.scalar('train/acc',l, step=cpt)
+            tf.summary.scalar('train/acc',acc, step=cpt)
 
 
-        gradients = tape.gradient(loss, Model.trainable_variables)
+        gradients = tape.gradient(l, Model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, Model.trainable_variables))            
         """
         TEST
@@ -96,7 +96,7 @@ def train(train_dataloader, test_dataloader, len_train,
 
                 with summary_writer.as_default(): 
                     tf.summary.scalar('test/loss',l, step=cpt)
-                    tf.summary.scalar('test/acc',l, step=cpt)
+                    tf.summary.scalar('test/acc',acc, step=cpt)
                 if c == 2:
                     break
             test_dataloader.shuffle()
