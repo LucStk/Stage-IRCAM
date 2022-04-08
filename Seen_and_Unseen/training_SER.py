@@ -93,7 +93,7 @@ def train(train_dataloader, test_dataloader, len_train,
                 y_hat = Model(x)
                 l = loss(y_,y_hat)
                 
-                acc = np.mean(y == tf.math.argmax(y_hat))
+                acc = np.mean(y == tf.math.argmax(y_hat, axis = 1))
 
                 with summary_writer.as_default(): 
                     tf.summary.scalar('test/loss',l, step=cpt)
