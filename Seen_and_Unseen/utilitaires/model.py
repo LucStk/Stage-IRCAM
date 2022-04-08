@@ -458,7 +458,7 @@ class SER(tf.keras.Model):
  
     self.W = layers.Dense(1)
     self.H = tf.keras.models.Sequential([
-      layers.Dense(32, activation=act_dens),
+      layers.Dense(32),# activation=act_dens),
       layers.Dense(5),
     ])#Nombre d'étiquettes
 
