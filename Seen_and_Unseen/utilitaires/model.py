@@ -432,7 +432,7 @@ class Discriminator_conv(tf.keras.Model):
 class SER(tf.keras.Model):
   def __init__(self):
     super(SER, self).__init__()
-    act_rnn  = act.elu
+    act_rnn  = act.relu
     act_conv = act.relu
     act_dens = act.relu
 
