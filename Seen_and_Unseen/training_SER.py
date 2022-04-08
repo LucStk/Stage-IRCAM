@@ -45,7 +45,7 @@ def train(train_dataloader, test_dataloader, len_train,
           ircam = False, 
           load_path = None):
     print("Training Beging")
-    EPOCH = 130
+    EPOCH = 30
     LR = 1e-4
     TEST_EPOCH = 1/2
 
