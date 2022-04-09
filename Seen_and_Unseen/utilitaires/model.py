@@ -432,9 +432,9 @@ class Discriminator_conv(tf.keras.Model):
 class SER(tf.keras.Model):
   def __init__(self):
     super(SER, self).__init__()
-    act_rnn  = act.relu
-    act_conv = act.relu
-    act_dens = act.relu
+    act_rnn  = act.elu
+    act_conv = act.elu
+    act_dens = act.elu
 
     self.conv = tf.keras.models.Sequential([
         layers.Masking(mask_value=0.),
@@ -467,7 +467,7 @@ class SER(tf.keras.Model):
     x = tf.expand_dims(x, axis=-1)
     x = self.conv(x)
     x = tf.reshape(x, (x.shape[0], -1, 128))
-    #x = self.lstm_1(x)
+    x = self.lstm_1(x)
     x = self.bi_lstm(x)
     alpha = tf.keras.activations.softmax(self.W(x), axis = 1)
     alpha = tf.repeat(alpha, repeats=x.shape[-1], axis = -1)
