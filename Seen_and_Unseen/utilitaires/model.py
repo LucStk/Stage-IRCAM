@@ -460,10 +460,11 @@ class SER(tf.keras.Model):
                               activation = act_rnn, 
                               return_sequences = True,
                               dropout=0.2)
-    self.bi_lstm = layers.Bidirectional(layers.LSTM(64, 
-                                                    activation = act_rnn, 
-                                                    return_sequences=True,
-                                                    dropout=0.2))  
+    self.bi_lstm = layers.Bidirectional(
+                            layers.LSTM(64, 
+                                        activation = act_rnn, 
+                                        return_sequences=False,
+                                        dropout=0.2))  
  
     self.W = layers.Dense(1)
     self.H = tf.keras.models.Sequential([
