@@ -442,24 +442,35 @@ class SER(tf.keras.Model):
         layers.Conv2D(16, 5, activation=act_conv),
         layers.MaxPool2D(pool_size=2),
         layers.BatchNormalization(),
+        layers.Dropout(.2),
 
         layers.Conv2D(32, 5, activation=act_conv),
         layers.MaxPool2D(pool_size=2),
         layers.BatchNormalization(),
+        layers.Dropout(.2),
         
         layers.Conv2D(64, 5, activation=act_conv),
         layers.MaxPool2D(pool_size=2),
         layers.BatchNormalization(),
+        layers.Dropout(.2),
         
         layers.Conv2D(128, 5,activation=act_conv),
     ])
-    self.lstm_1  = layers.GRU(128, activation = act_rnn, return_sequences = True)
-    self.bi_lstm = layers.Bidirectional(layers.LSTM(64, activation = act_rnn, return_sequences=True))  
+    self.lstm_1  = layers.GRU(128, 
+                              activation = act_rnn, 
+                              return_sequences = True,
+                              dropout=0.2)
+    self.bi_lstm = layers.Bidirectional(layers.LSTM(64, 
+                                                    activation = act_rnn, 
+                                                    return_sequences=True,
+                                                    dropout=0.2))  
  
     self.W = layers.Dense(1)
     self.H = tf.keras.models.Sequential([
-      #layers.Dense(64, activation=act_dens),
-      #layers.Dense(16, activation=act_dens),
+      layers.Dense(64, activation=act_dens),
+      layers.Dropout(.2, input_shape=(2,)),
+      layers.Dense(16, activation=act_dens),
+      layers.Dropout(.2, input_shape=(2,)),
       layers.Dense(5),
     ])#Nombre d'étiquettes
 
