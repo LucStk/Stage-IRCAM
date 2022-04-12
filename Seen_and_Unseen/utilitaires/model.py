@@ -8,6 +8,12 @@ import numpy as np
 # Valeurs observés dans les data
 MAX = 3
 MIN = -14
+MEAN_DATASET  = -6.0056405
+STD_DATASET   =  2.4420118
+MAX_normalised = (MAX-MEAN_DATASET)/STD_DATASET
+MIN_normalised = (MIN-MEAN_DATASET)/STD_DATASET
+
+
 """
 Decodeur et Encodeur_rnn Convolutif/RNN
 """
@@ -331,50 +337,41 @@ class Auto_Encodeur_conv2D(Auto_Encodeur_rnn):
 """
 IMPLEMENTATION Papier Seen and Unseen
 """
-class Encodeur_conv(tf.keras.Model):
+class Encodeur_SAU(tf.keras.Model):
   def __init__(self):
-    super(Encodeur_conv, self).__init__()
+    super(Encodeur_SAU, self).__init__()
     act_conv = act.relu
     self.conv = tf.keras.models.Sequential([
         layers.Masking(mask_value=0.),
         
+        layers.Conv1D(8, 4, activation=act_conv),
+        layers.MaxPool1D(pool_size=4),
+        layers.BatchNormalization(),
+        
         layers.Conv1D(16, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=2),
+        layers.MaxPool1D(pool_size=4),
         layers.BatchNormalization(),
         
         layers.Conv1D(32, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=2),
-        layers.BatchNormalization(),
-        
-        layers.Conv1D(64, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=2),
-        layers.BatchNormalization(),
-        
-        layers.Conv1D(128, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=2),
-        layers.BatchNormalization(),
-
-        layers.Conv1D(256, 2, activation=act_conv),
     ])
-    self.latent  = layers.Dense(128+256+1)
-
+    self.latent = layers.Dense(64)
   def call(self, x):
-    x = tf.expand_dims(x, axis=-1)
+    x = tf.expand_dims(x, axis = -1)
     x = self.conv(x)
     x = self.latent(x)
     return x
 
-class Decodeur_conv(tf.keras.Model):
+class Decodeur_SAU(tf.keras.Model):
   def __init__(self):
-    super(Decodeur_conv, self).__init__()
+    super(Decodeur_SAU, self).__init__()
     act_conv = act.elu
     self.convT = tf.keras.models.Sequential([
         layers.UpSampling1D(size=4),
-        layers.Conv1DTranspose(128, 4, activation=act_conv),
+        layers.Conv1DTranspose(32, 4, activation=act_conv),
         layers.BatchNormalization(),
 
         layers.UpSampling1D(size=2),
-        layers.Conv1DTranspose(32, 4, activation=act_conv),
+        layers.Conv1DTranspose(16, 4, activation=act_conv),
         layers.BatchNormalization(),
         
         layers.UpSampling1D(size=2),
@@ -383,48 +380,78 @@ class Decodeur_conv(tf.keras.Model):
 
         layers.UpSampling1D(size=2),
         layers.Conv1DTranspose(1, 7, activation=act_conv),
-    ])  
+    ])
   def call(self, x):
     """
     Génére une sortie de taille size à partir d'un espace latent (batch, latent_size)
     """
     x = self.convT(x)
     x = tf.squeeze(x)
-    x = ks.activations.sigmoid(x)*(MAX-MIN)+MIN
+    x = ks.activations.sigmoid(x)*(MAX_normalised-MIN_normalised)+MIN_normalised
     return x
 
-class Discriminator_conv(tf.keras.Model):
+class Auto_Encodeur_SAU(Auto_Encodeur_rnn):
   def __init__(self):
-    super(Discriminator_conv, self).__init__()
+    super(Auto_Encodeur_SAU, self).__init__()
+    self.encodeur = Encodeur_SAU()
+    self.decodeur = Decodeur_SAU()
+
+
+  def call(self,x, phi):
+    """
+    x   : (b*lenght, 80)
+    phi : (b*lenght, 128)
+    """
+    phi = np.expand_dims(phi, axis=1) #(b*lenght, 1, 128)
+    latent = self.encodeur(x)#(b*lenght, 1, 80)
+    latent = np.concatenate((phi,latent), axis = 2)
+
+    out    = self.decodeur(latent)
+    return out
+
+class Discriminator_SAU(tf.keras.Model):
+  def __init__(self):
+    super(Discriminator_SAU, self).__init__()
     
-    act_conv = act.elu
+    act_conv  = act.elu
+    act_dense = act.elu
     self.conv = tf.keras.models.Sequential([
-      layers.Masking(mask_value=0.),
-
-      layers.Conv1D(8, 8, activation=act_conv),
-      layers.MaxPool1D(pool_size=3),
-      layers.BatchNormalization(),
-
-      layers.Conv1D(32, 8, activation=act_conv),
-      layers.MaxPool1D(pool_size=2),
-      layers.BatchNormalization(),
-
-      layers.Conv1D(115, 8, activation=act_conv),
+        layers.Masking(mask_value=0.),
+        
+        layers.Conv1D(16, 4, activation=act_conv),
+        layers.MaxPool1D(pool_size=4),
+        layers.BatchNormalization(),
+        
+        layers.Conv1D(32, 4, activation=act_conv),
+        layers.MaxPool1D(pool_size=4),
+        layers.BatchNormalization(),
+        
+        layers.Conv1D(128, 4, activation=act_conv),
     ])
     self.H = tf.keras.models.Sequential([
       layers.Flatten(),
-      layers.Dense(80),
-      layers.Dense(10),
-      layers.Dense(1),
+      layers.Dense(80, activation=act_dense),
+      layers.Dense(30, activation=act_dense),
+      layers.Dense(1, activation=act.sigmoid),
     ])
 
-  def call(self, x, step):
+  def save_weights(self, file, step):
+    super.save_weights(file+'/Discriminator/'+str(step))
+
+  def load_weights(self, file,  step = None):
+    if step is None:
+      f = tf.train.latest_checkpoint(file+'/Discriminator')
+    else:
+      f = file+'/Discriminator/'+str(step)
+    super.load_weights(f)
+
+  def call(self, x):
     """
-    Génére une sortie de taille size à partir d'un espace latent (batch, latent_size)
+    x : (b*lenght, 80)
     """
+    x = np.expand_dims(x, axis=-1)
     x = self.conv(x)
     x = self.H(x)
-    x = ks.activations.sigmoid(x)
     return x
 
 
@@ -469,11 +496,19 @@ class SER(tf.keras.Model):
     self.W = layers.Dense(1)
     self.H = tf.keras.models.Sequential([
       layers.Dense(64, activation=act_dens),
-      layers.Dropout(.2, input_shape=(2,)),
+      layers.Dropout(.2),
       layers.Dense(16, activation=act_dens),
-      layers.Dropout(.2, input_shape=(2,)),
+      layers.Dropout(.2),
       layers.Dense(5),
     ])#Nombre d'étiquettes
+
+  def call_latent(self, x):
+    x = tf.expand_dims(x, axis=-1)
+    x = self.conv(x)
+    x = tf.reshape(x, (x.shape[0], -1, 128))
+    x = self.lstm_1(x)
+    x = self.bi_lstm(x)
+    return x
 
   def call(self, x):
     x = tf.expand_dims(x, axis=-1)

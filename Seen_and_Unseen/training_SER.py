@@ -67,11 +67,13 @@ def train(train_dataloader, test_dataloader, len_train,
         print(cpt)
         y_ = tf.one_hot(y,5)
         x = normalisation(x)
+        
         with tf.GradientTape() as tape: #Normalisation
             y_hat  = Model(x)
             l = loss(y_,y_hat)
         ymax = tf.math.argmax(y_hat, axis = 1)
         acc = np.mean(y == ymax)
+
         with summary_writer.as_default():
             tf.summary.scalar('train/loss',l, step=cpt)
             tf.summary.scalar('train/acc',acc, step=cpt)
