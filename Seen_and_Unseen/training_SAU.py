@@ -191,7 +191,7 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
             Discriminator_SAU.save_weights(log_dir, format(cpt//len_train))
             raise "End Test"
 
-            
+
 if __name__ == "__main__":
     longoptions = ['lock=', 'place=', 'load=', 'load_SER=']
     ov, ra = getopt.getopt(sys.argv[1:], "", longoptions)
@@ -238,8 +238,8 @@ if __name__ == "__main__":
         SHUFFLE    = True
         LANGAGE    = "english"
         USE_DATA_QUEUE = True
-        load_path = ov.get('--load')
-        load_SER_path = ov.get('--load_SER') <w
+        load_path     = ov.get('--load')
+        load_SER_path = ov.get('--load_SER')
         train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
                                                                     LANGAGE, USE_DATA_QUEUE,)
         print("test_dataloader")
