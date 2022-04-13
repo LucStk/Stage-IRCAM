@@ -404,7 +404,7 @@ class Auto_Encodeur_SAU(Auto_Encodeur_rnn):
     """
     phi = np.expand_dims(phi, axis=1) #(b*lenght, 1, 128)
     latent = self.encodeur(x)#(b*lenght, 1, 80)
-    latent = np.concatenate((phi,latent), axis = 2)
+    latent = tf.concat((phi,latent), axis = 2)
 
     out    = self.decodeur(latent)
     return out
@@ -449,7 +449,7 @@ class Discriminator_SAU(tf.keras.Model):
     """
     x : (b*lenght, 80)
     """
-    x = np.expand_dims(x, axis=-1)
+    x = tf.expand_dims(x, axis=-1)
     x = self.conv(x)
     x = self.H(x)
     return x

@@ -32,7 +32,7 @@ def dataloader(FILEPATH, batch_size=30, shuffle=True, langage = 'english', use_d
         data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
         data_queue.start()
         train_dataloader = data_queue.get()    
-    test_dataloader = ESD_data_generator(FILEPATH, batch_size=400, langage=langage, type_='test',shuffle=True)
+    test_dataloader = ESD_data_generator(FILEPATH, batch_size=30, langage=langage, type_='test',shuffle=True)
     return train_dataloader, test_dataloader, data_queue, len_train
 
 def mean_SER_emotion(FILEPATH, SER, batch_size):

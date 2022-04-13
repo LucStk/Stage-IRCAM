@@ -1,5 +1,6 @@
 import os
 from pickletools import optimize
+from pexpect import ExceptionPexpect
 from sklearn.utils import shuffle
 from sympy import discriminant
 from yaml import load
@@ -36,8 +37,12 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
     auto_encodeur = Auto_Encodeur_SAU()
     ser = SER()
     discriminator = Discriminator_SAU()
+    """
+    def BCE(y, yhat, eps = 1e-4):
+        return tf.reduce_mean(-(y*tf.math.log(yhat + eps) + (y-1)*tf.math.log(1-yhat + eps)))
+    """
 
-    loss = tf.keras.losses.BinaryCrossentropy()
+    BCE = tf.keras.losses.BinaryCrossentropy()
 
     if load_path is not None :
         try:
@@ -90,35 +95,29 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
             x__ = x_[indices]
             ser_latent_ = ser_latent[indices]
 
-
-            with tf.GradientTape() as tape_gen, tf.GradientTape() as tape_disc:
+            with tf.GradientTape() as tape_gen: #, tf.GradientTape() as tape_disc:
                 # Apprentissage générateur
                 out = auto_encodeur(x__, ser_latent_)
                 d_gen = discriminator(out)
-                l_gen = loss(np.ones(d_gen.shape),d_gen)
+                l_gen = BCE(tf.ones_like(d_gen),d_gen)
 
-            grad_disc = tape_disc.gradient(l_gen, discriminator.trainable_variables)
-            grad_disc = tape_gen.gradient(l_gen, auto_encodeur.trainable_variables)
-            optimizer.apply_gradients(zip(grad_disc, auto_encodeur.trainable_variables))
+            grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.trainable_variables)
+            optimizer.apply_gradients(zip(grad_gen, auto_encodeur.trainable_variables))
 
-            raise Exception("DONE")
-            with tf.GradientTape() as tape_disc: #Normalisation
-                #Apprentissage discriminator
+            with tf.GradientTape() as tape_disc:
+                # Apprentissage générateur
                 d_true  = discriminator(x__)
-                d_false = discriminator(tf.stop_gradient(out))
-                
-                l_true  = loss(np.ones(d_true.shape),d_true)
-                l_false = loss(np.zeros(d_false.shape),d_false)
-                loss    = l_true+l_false
-                
-            gradients = tape_disc.gradient(loss, discriminator.trainable_variables)
-            optimizer.apply_gradients(zip(gradients, discriminator.trainable_variables))
+                d_false = discriminator(out)
+                l_disc  = BCE(tf.ones_like(d_true),d_true)+BCE(tf.zeros_like(d_false),d_false)
+        
+            grad_disc = tape_disc.gradient(l_disc, discriminator.trainable_variables)
+            optimizer.apply_gradients(zip(grad_disc, discriminator.trainable_variables))
+
             mdc = MDC_1D(out, x__)
 
             with summary_writer.as_default(): 
                 tf.summary.scalar('train/loss_generateur',l_gen, step=cpt)
-                tf.summary.scalar('train/loss_discriminateur_true',l_true, step=cpt)
-                tf.summary.scalar('train/loss_discriminateur_false',l_false, step=cpt)
+                tf.summary.scalar('train/loss_discriminateur',l_disc, step=cpt)
                 tf.summary.scalar('train/mdc',mdc , step=cpt)
             break
 
@@ -137,10 +136,11 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
                 lignes = np.delete(lignes, mask, axis=0)
 
                 ser_latent = ser.call_latent(x)
-                ser_latent[lignes] #association latent -> lignes
-
+                ser_latent = np.array(ser_latent)[lignes] #association latent -> lignes
                 l_order = np.arange(len(x_))
+
                 np.random.shuffle(l_order)
+
                 x_ = x_[l_order][:500]
                 ser_latent = ser_latent[l_order][:500]
 
@@ -148,13 +148,13 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
                 
                 # Apprentissage générateur
                 d_gen = discriminator(out)
-                l_gen = loss(np.ones(d_gen.shape),d_gen)
+                l_gen = BCE(np.ones(d_gen.shape),d_gen)
 
                 d_true  = discriminator(x_)
                 d_false = discriminator(tf.stop_gradient(out))
                 
-                l_true  = loss(np.ones(d_true.shape),d_true)
-                l_false = loss(np.zeros(d_false.shape),d_false)
+                l_true  = BCE(np.ones(d_true.shape),d_true)
+                l_false = BCE(np.zeros(d_false.shape),d_false)
 
                 mdc = MDC_1D(out, x__)
                 with summary_writer.as_default(): 
@@ -189,7 +189,9 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
             print("save")
             Auto_Encodeur_SAU.save_weights(log_dir, format(cpt//len_train))
             Discriminator_SAU.save_weights(log_dir, format(cpt//len_train))
+            raise "End Test"
 
+            
 if __name__ == "__main__":
     longoptions = ['lock=', 'place=', 'load=', 'load_SER=']
     ov, ra = getopt.getopt(sys.argv[1:], "", longoptions)
@@ -237,7 +239,7 @@ if __name__ == "__main__":
         LANGAGE    = "english"
         USE_DATA_QUEUE = True
         load_path = ov.get('--load')
-        load_SER_path = ov.get('--load_SER') 
+        load_SER_path = ov.get('--load_SER') <w
         train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
                                                                     LANGAGE, USE_DATA_QUEUE,)
         print("test_dataloader")
