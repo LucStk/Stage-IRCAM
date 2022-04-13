@@ -21,10 +21,10 @@ config.gpu_options.allow_growth = True
 session = InteractiveSession(config=config)
 
 def train(FILE_PATH, train_dataloader, test_dataloader, len_train, 
-          test = False, 
+          test  = False, 
           ircam = False, 
           load_path = None,
-          load_path_SER = None):
+          load_SER_path = None):
 
     print("Training Beging")
     EPOCH = 100
@@ -46,7 +46,7 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
         except:
             print("auto_encodeur not load succesfully from"+os.getcwd()+load_path)
 
-    if load_path_SER is not None:
+    if load_SER_path is not None:
         try:
             ser.load_weights(os.getcwd()+load_path)
             print('ser load sucessfuly')
