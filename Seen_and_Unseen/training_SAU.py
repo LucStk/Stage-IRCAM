@@ -69,7 +69,7 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
         audio_summary_writer = tf.summary.create_file_writer(audio_log_dir)
         mel_inv = Mel_inverter()
         l_mean_latent_ser = mean_SER_emotion(FILE_PATH, ser, 100)
-        echantillon = emotion_echantillon(FILEPATH)
+        echantillon       = emotion_echantillon(FILEPATH)
     
 
     print("Every thing is ready")
@@ -124,7 +124,7 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
         """
         TEST
         """
-        if True : #test and ((cpt+1)%int(TEST_EPOCH*len_train) == 0):
+        if False: #test and ((cpt+1)%int(TEST_EPOCH*len_train) == 0):
             print('test_time')
             for c, (x,y)  in enumerate(test_dataloader):
                 x = normalisation(x)
@@ -167,7 +167,7 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
         if True : #(cpt+1) % len_train == 0:
             print("End batch")
 
-            if ircam:
+            if True: #ircam:
                 """
                 Pour un échantillon neutre, effectue une EVC avec toutes les
                 émotions.
@@ -176,13 +176,15 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
                 l_emotion = ['Angry','Happy', 'Neutral', 'Sad', 'Surprise']
                 with audio_summary_writer.as_default(): 
                     x = echantillon[2] # On ne prend que le neutre
-                    rec_x   = mel_inv.convert(de_normalisation(x)[0])
+                    rec_x   = mel_inv.convert(de_normalisation(x))
                     tf.summary.audio('Original',rec_x, 24000, step=cpt)
                     for i, emo in enumerate(l_emotion):
-                        phi  = tf.repeat(l_mean_latent_ser[i], x.shape[0])
+                        tmp = np.expand_dims(l_mean_latent_ser[i], axis = 0)
+                        phi = np.repeat(tmp, x.shape[0], axis = 0)
                         print("exec", phi.shape, x.shape)
+                        
                         out  = auto_encodeur(x, phi)
-                        rec_out = mel_inv.convert(de_normalisation(out)[0])
+                        rec_out = mel_inv.convert(de_normalisation(out))
                         tf.summary.audio('Reconstruct '+emo,rec_out, 24000,step=cpt)
 
             print("save")
