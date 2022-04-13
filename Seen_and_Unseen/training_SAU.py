@@ -29,7 +29,8 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
     EPOCH = 100
     LR = 1e-5
     TEST_EPOCH = 1/2
-    
+    BATCH_SIZE = 256
+
     optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
     auto_encodeur = Auto_Encodeur_SAU()
     ser = SER()
@@ -66,51 +67,62 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
     
 
     print("Every thing is ready")
-    for cpt, (x,y)  in enumerate(train_dataloader):
-        print(cpt)
+    cpt = 0
+    for x,y in train_dataloader:
+        
         x = normalisation(x)
-        x_ = x_.reshape(-1, 80) #format (b*lenght, 80)
+        x_ = tf.reshape(x,(-1, 80)) #format (b*lenght, 80)
         lignes = np.repeat(np.arange(x.shape[0]),x.shape[1], axis = 0)
-
         mask   = np.where(x_ == 0)[0]
         x_     = np.delete(x_,mask, axis=0) # Delete le padding
         lignes = np.delete(lignes, mask, axis=0)
-
         ser_latent = ser.call_latent(x)
-        ser_latent[lignes] #association latent -> lignes
+        ser_latent = np.array(ser_latent)[lignes] #association latent -> lignes
+        l_order = np.arange(len(x_))
 
-        with tf.GradientTape() as tape_gen:
-            out  = auto_encodeur(x_, ser_latent)
-            # Apprentissage générateur
-            d_gen = discriminator(out)
-            l_gen = loss(np.ones(d_gen.shape),d_gen)
+        np.random.shuffle(l_order)
 
-        gradients = tape_gen.gradient(l_gen, auto_encodeur.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, auto_encodeur.trainable_variables))
+        for b in range(len(x_)//BATCH_SIZE):
+            cpt += 1
+            print(cpt)
+            indices = l_order[b*BATCH_SIZE:(b+1)*BATCH_SIZE]
+            x__ = x_[indices]
+            ser_latent_ = ser_latent[indices]
 
-        with tf.GradientTape() as tape_disc: #Normalisation
-            #Apprentissage discriminator
-            d_true  = discriminator(x_)
-            d_false = discriminator(tf.stop_gradient(out))
-            
-            l_true  = loss(np.ones(d_true.shape),d_true)
-            l_false = loss(np.zeros(d_false.shape),d_false)
-            loss    = l_true+l_false
 
-        gradients = tape_disc.gradient(loss, discriminator.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, discriminator.trainable_variables))
+            with tf.GradientTape() as tape_gen:
+                out  = auto_encodeur(x__, ser_latent_)
+                # Apprentissage générateur
+                d_gen = discriminator(out)
+                l_gen = loss(np.ones(d_gen.shape),d_gen)
 
-        mdc = MDC(x_, d_false)
-        with summary_writer.as_default(): 
-            tf.summary.scalar('train/loss_generateur',l_gen, step=cpt)
-            tf.summary.scalar('train/loss_discriminateur_true',l_true, step=cpt)
-            tf.summary.scalar('train/loss_discriminateur_false',l_false, step=cpt)
-            tf.summary.scalar('train/mdc',mdc , step=cpt)
+            grad_disc = tape_gen.gradient(l_gen, auto_encodeur.trainable_variables)
+            optimizer.apply_gradients(zip(grad_disc, auto_encodeur.trainable_variables))
+
+            with tf.GradientTape() as tape_disc: #Normalisation
+                #Apprentissage discriminator
+                d_true  = discriminator(x__)
+                d_false = discriminator(tf.stop_gradient(out))
+                
+                l_true  = loss(np.ones(d_true.shape),d_true)
+                l_false = loss(np.zeros(d_false.shape),d_false)
+                loss    = l_true+l_false
+                
+            gradients = tape_disc.gradient(loss, discriminator.trainable_variables)
+            optimizer.apply_gradients(zip(gradients, discriminator.trainable_variables))
+            mdc = MDC_1D(out, x__)
+
+            with summary_writer.as_default(): 
+                tf.summary.scalar('train/loss_generateur',l_gen, step=cpt)
+                tf.summary.scalar('train/loss_discriminateur_true',l_true, step=cpt)
+                tf.summary.scalar('train/loss_discriminateur_false',l_false, step=cpt)
+                tf.summary.scalar('train/mdc',mdc , step=cpt)
+            break
 
         """
         TEST
         """
-        if test and ((cpt+1)%int(TEST_EPOCH*len_train) == 0):
+        if True : #test and ((cpt+1)%int(TEST_EPOCH*len_train) == 0):
             print('test_time')
             for c, (x,y)  in enumerate(test_dataloader):
                 x = normalisation(x)
@@ -124,7 +136,13 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
                 ser_latent = ser.call_latent(x)
                 ser_latent[lignes] #association latent -> lignes
 
+                l_order = np.arange(len(x_))
+                np.random.shuffle(l_order)
+                x_ = x_[l_order][:500]
+                ser_latent = ser_latent[l_order][:500]
+
                 out  = auto_encodeur(x_, ser_latent)
+                
                 # Apprentissage générateur
                 d_gen = discriminator(out)
                 l_gen = loss(np.ones(d_gen.shape),d_gen)
@@ -135,18 +153,17 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
                 l_true  = loss(np.ones(d_true.shape),d_true)
                 l_false = loss(np.zeros(d_false.shape),d_false)
 
-                mdc = MDC(x_, d_false)
+                mdc = MDC_1D(out, x__)
                 with summary_writer.as_default(): 
                     tf.summary.scalar('test/loss_generateur',l_gen, step=cpt)
                     tf.summary.scalar('test/loss_discriminateur_true',l_true, step=cpt)
                     tf.summary.scalar('test/loss_discriminateur_false',l_false, step=cpt)
                     tf.summary.scalar('test/mdc',mdc , step=cpt)
                 
-                if c == 2:
-                    break
+                break
             test_dataloader.shuffle()
 
-        if (cpt+1) % len_train == 0:
+        if True : #(cpt+1) % len_train == 0:
             print("End batch")
 
             if ircam:
