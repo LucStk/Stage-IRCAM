@@ -436,14 +436,14 @@ class Discriminator_SAU(tf.keras.Model):
     ])
 
   def save_weights(self, file, step):
-    super.save_weights(file+'/Discriminator/'+str(step))
+    super().save_weights(file+'/Discriminator/'+str(step))
 
   def load_weights(self, file,  step = None):
     if step is None:
       f = tf.train.latest_checkpoint(file+'/Discriminator')
     else:
       f = file+'/Discriminator/'+str(step)
-    super.load_weights(f, step)
+    super().load_weights(f, step)
 
   def call(self, x):
     """
