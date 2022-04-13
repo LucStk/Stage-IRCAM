@@ -128,16 +128,14 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
             print('test_time')
             for c, (x,y)  in enumerate(test_dataloader):
                 x = normalisation(x)
-                x_ = x_.reshape(-1, 80) #format (b*lenght, 80)
+                x_ = tf.reshape(x,(-1, 80)) #format (b*lenght, 80)
                 lignes = np.repeat(np.arange(x.shape[0]),x.shape[1], axis = 0)
-
                 mask   = np.where(x_ == 0)[0]
                 x_     = np.delete(x_,mask, axis=0) # Delete le padding
                 lignes = np.delete(lignes, mask, axis=0)
-
                 ser_latent = ser.call_latent(x)
                 ser_latent = np.array(ser_latent)[lignes] #association latent -> lignes
-                l_order    = np.arange(len(x_))
+                l_order = np.arange(len(x_))
 
                 np.random.shuffle(l_order)
 
