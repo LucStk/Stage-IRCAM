@@ -91,15 +91,17 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
             ser_latent_ = ser_latent[indices]
 
 
-            with tf.GradientTape() as tape_gen:
-                out  = auto_encodeur(x__, ser_latent_)
+            with tf.GradientTape() as tape_gen, tf.GradientTape() as tape_disc:
                 # Apprentissage générateur
+                out = auto_encodeur(x__, ser_latent_)
                 d_gen = discriminator(out)
                 l_gen = loss(np.ones(d_gen.shape),d_gen)
 
+            grad_disc = tape_disc.gradient(l_gen, discriminator.trainable_variables)
             grad_disc = tape_gen.gradient(l_gen, auto_encodeur.trainable_variables)
             optimizer.apply_gradients(zip(grad_disc, auto_encodeur.trainable_variables))
 
+            raise Exception("DONE")
             with tf.GradientTape() as tape_disc: #Normalisation
                 #Apprentissage discriminator
                 d_true  = discriminator(x__)
