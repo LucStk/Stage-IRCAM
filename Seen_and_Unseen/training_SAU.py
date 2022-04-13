@@ -141,7 +141,7 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
                 l_order = l_order[:500]
                 x_         = x_[l_order]
                 ser_latent = ser_latent[l_order]
-                
+
                 out = auto_encodeur(x_, ser_latent)
                 
                 # Apprentissage générateur
@@ -179,7 +179,8 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
                     rec_x   = mel_inv.convert(de_normalisation(x)[0])
                     tf.summary.audio('Original',rec_x, 24000, step=cpt)
                     for i, emo in enumerate(l_emotion):
-                        phi  = np.expand_dims(l_mean_latent_ser[i], axis=0)
+                        phi  = tf.repeat(l_mean_latent_ser[i], x.shape[0])
+                        print("exec", phi.shape, x.shape)
                         out  = auto_encodeur(x, phi)
                         rec_out = mel_inv.convert(de_normalisation(out)[0])
                         tf.summary.audio('Reconstruct '+emo,rec_out, 24000,step=cpt)

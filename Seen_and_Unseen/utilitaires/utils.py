@@ -39,6 +39,7 @@ def mean_SER_emotion(FILEPATH, SER, batch_size):
     """
     Effectue, pour un chaque émotion, une moyenne d'espace latent SER avec un
     sample de taille batch_size
+    return : (5, 128)
     """
     dataloader = ESD_batch_data_generator(FILEPATH, shuffle = False, langage='english')
     gr_emotion = dataloader.dataset_emotion # (5,~) nom_fichier listé par émotion
@@ -46,7 +47,6 @@ def mean_SER_emotion(FILEPATH, SER, batch_size):
     for g in gr_emotion:
         np.random.shuffle(g)
         batch = g[:batch_size]#list de batch_size nom de fichier d'émotion i
-        
         x = [pd.read_pickle(f) for f in batch]
         x = auto_padding(x)
         x = tf.transpose(x, perm = [0,2,1])
@@ -54,12 +54,12 @@ def mean_SER_emotion(FILEPATH, SER, batch_size):
         tmp = SER.call_latent(x)
         latent = tf.math.reduce_mean(tmp, axis = 0)
         ret += [latent]
-
     return ret
 
 def emotion_echantillon(FILEPATH):
     """
-    Fournis un échantillion pour chaque émotions
+    Fournis un échantillion pour chaque émotions 
+    return : (L, 80)
     """
     dataloader = ESD_batch_data_generator(FILEPATH, shuffle = False, langage='english')
     gr_emotion = dataloader.dataset_emotion # (5,~) nom_fichier listé par émotion
@@ -67,8 +67,7 @@ def emotion_echantillon(FILEPATH):
     for g in gr_emotion:
         np.random.shuffle(g)
         x = pd.read_pickle(g[0])
-        x = np.expand_dims(x, 0)
-        x = tf.transpose(x, perm = [0,2,1])
+        x = tf.transpose(x, perm = [1,0])
         x = normalisation(x)
         ret += [x]
 
