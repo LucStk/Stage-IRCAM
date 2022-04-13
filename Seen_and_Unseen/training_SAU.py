@@ -139,11 +139,9 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
 
                 np.random.shuffle(l_order)
                 l_order = l_order[:500]
-
-                print('test ', x_.shape, ser_latent.shape)
                 x_         = x_[l_order]
                 ser_latent = ser_latent[l_order]
-
+                
                 out = auto_encodeur(x_, ser_latent)
                 
                 # Apprentissage générateur
@@ -156,7 +154,7 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
                 l_true  = BCE(np.ones(d_true.shape),d_true)
                 l_false = BCE(np.zeros(d_false.shape),d_false)
 
-                mdc = MDC_1D(out, x__)
+                mdc = MDC_1D(out, x_)
                 with summary_writer.as_default(): 
                     tf.summary.scalar('test/loss_generateur',l_gen, step=cpt)
                     tf.summary.scalar('test/loss_discriminateur_true',l_true, step=cpt)
