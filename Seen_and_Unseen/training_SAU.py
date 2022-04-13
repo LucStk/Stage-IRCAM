@@ -84,7 +84,7 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
         lignes = np.delete(lignes, mask, axis=0)
         ser_latent = ser.call_latent(x)
         ser_latent = np.array(ser_latent)[lignes] #association latent -> lignes
-        l_order = np.arange(len(x_))
+        l_order    = np.arange(len(x_))
 
         np.random.shuffle(l_order)
 
@@ -124,8 +124,7 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
         """
         TEST
         """
-        if False: #test and ((cpt+1)%int(TEST_EPOCH*len_train) == 0):
-            print('test_time')
+        if test and ((cpt+1)%int(TEST_EPOCH*len_train) == 0):
             for c, (x,y)  in enumerate(test_dataloader):
                 x = normalisation(x)
                 x_ = tf.reshape(x,(-1, 80)) #format (b*lenght, 80)
@@ -164,10 +163,10 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
                 break
             test_dataloader.shuffle()
 
-        if True : #(cpt+1) % len_train == 0:
+        if (cpt+1) % len_train == 0:
             print("End batch")
 
-            if True: #ircam:
+            if ircam:
                 """
                 Pour un échantillon neutre, effectue une EVC avec toutes les
                 émotions.
@@ -188,7 +187,6 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
             print("save")
             auto_encodeur.save_weights(log_dir, format(cpt//len_train))
             discriminator.save_weights(log_dir, format(cpt//len_train))
-            raise "End Test"
 
 
 if __name__ == "__main__":

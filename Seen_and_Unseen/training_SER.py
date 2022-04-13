@@ -28,6 +28,7 @@ def normalisation(x):
     x = tf.multiply(x, mask)
     #x = tf.cast(x, tf.float32)
     return x
+    
 def dataloader(FILEPATH, batch_size=30, shuffle=True, langage = 'english', use_data_queue= False):
     data_queue = None
     train_dataloader = ESD_data_generator(FILEPATH, batch_size, shuffle, langage)

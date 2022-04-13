@@ -23,7 +23,8 @@ def de_normalisation(x):
     x = tf.multiply(x, mask)
     return x
 
-def dataloader(FILEPATH, batch_size=30, shuffle=True, langage = 'english', use_data_queue= False):
+def dataloader(FILEPATH, batch_size=30, batch_size_test = 50, shuffle=True, 
+               langage = 'english', use_data_queue= False):
     data_queue = None
     train_dataloader = ESD_data_generator(FILEPATH, batch_size, shuffle, langage)
     len_train = len(train_dataloader)
@@ -32,8 +33,22 @@ def dataloader(FILEPATH, batch_size=30, shuffle=True, langage = 'english', use_d
         data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
         data_queue.start()
         train_dataloader = data_queue.get()    
-    test_dataloader = ESD_data_generator(FILEPATH, batch_size=30, langage=langage, type_='test',shuffle=True)
+    test_dataloader = ESD_data_generator(FILEPATH, batch_size_test, langage=langage, type_='test',shuffle=True)
     return train_dataloader, test_dataloader, data_queue, len_train
+
+def dataloader_SAU(FILEPATH, batch_size=30, batch_size_test = 50, shuffle=True, 
+               langage = 'english', use_data_queue= False):
+    data_queue = None
+    train_dataloader = ESD_data_generator(FILEPATH, batch_size, shuffle, langage)
+    len_train = len(train_dataloader)
+    if use_data_queue:
+        print("begin data_queue")
+        data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
+        data_queue.start()
+        train_dataloader = data_queue.get()    
+    test_dataloader = ESD_data_generator(FILEPATH, batch_size_test, langage=langage, type_='test',shuffle=True)
+    return train_dataloader, test_dataloader, data_queue, len_train
+
 
 def mean_SER_emotion(FILEPATH, SER, batch_size):
     """
@@ -102,7 +117,6 @@ class Mel_inverter():
         """
         Convertion mell spectro to audio
         """
-        print(x.shape)
         self.dd['mell'] = x.numpy().T
         log_mel_spectrogram = self.MelInv.scale_mel(self.dd, verbose=False)
         rec_audio = self.MelInv.synth_from_mel(log_mel_spectrogram)
