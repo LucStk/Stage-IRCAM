@@ -2,6 +2,7 @@ import os
 from pickletools import optimize
 from sklearn.utils import shuffle
 from sympy import discriminant
+from yaml import load
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
 from utilitaires.model import SER, Auto_Encodeur_SAU, Discriminator_SAU 
@@ -188,7 +189,7 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
             Discriminator_SAU.save_weights(log_dir, format(cpt//len_train))
 
 if __name__ == "__main__":
-    longoptions = ['lock=', 'place=', 'load=']
+    longoptions = ['lock=', 'place=', 'load=', 'load_SER=']
     ov, ra = getopt.getopt(sys.argv[1:], "", longoptions)
     ov = dict(ov)
     place = ov.get("--place")
@@ -234,7 +235,7 @@ if __name__ == "__main__":
         LANGAGE    = "english"
         USE_DATA_QUEUE = True
         load_path = ov.get('--load')
-
+        load_SER_path = ov.get('--load_SER') 
         train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
                                                                     LANGAGE, USE_DATA_QUEUE,)
         print("test_dataloader")
@@ -242,9 +243,10 @@ if __name__ == "__main__":
             print("ok")
             break
         print("end_test_dataloader")
+
         with tf.device(comp_device) :
             train(FILEPATH,train_dataloader, test_dataloader, len_train, test = True, 
-                        ircam=True, load_path=load_path)
+                        ircam=True, load_path=load_path, load_SER_path = load_SER_path)
         if data_queue:
             data_queue.stop()
 
@@ -255,8 +257,10 @@ if __name__ == "__main__":
         LANGAGE    = "english"
         USE_DATA_QUEUE = False
         load_path = ov.get('--load')
+        load_SER_path = ov.get('--load_SER') 
         train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
                                                                     LANGAGE, USE_DATA_QUEUE)
-        train(FILEPATH, train_dataloader, test_dataloader, len_train, test = True, load_path=load_path)
+        train(FILEPATH, train_dataloader, test_dataloader, len_train, test = True,
+             load_path=load_path, load_SER_path = load_SER_path)
         if data_queue:
             data_queue.stop()
