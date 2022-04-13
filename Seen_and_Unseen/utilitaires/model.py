@@ -118,16 +118,16 @@ class Auto_Encodeur_rnn(tf.keras.Model):
 
   def save_weights(self, file, step):
     self.encodeur.save_weights(file+'/Encodeur_checkpoint/'+str(step))
-    self.decodeur.save_weights(file+'/decodeur_checkpoint/'+str(step))
+    self.decodeur.save_weights(file+'/Decodeur_checkpoint/'+str(step))
 
 
   def load_weights(self, file,  step = None):
     if step is None:
       f_enco = tf.train.latest_checkpoint(file+'/Encodeur_checkpoint')
-      f_deco = tf.train.latest_checkpoint(file+'/decodeur_checkpoint')
+      f_deco = tf.train.latest_checkpoint(file+'/Decodeur_checkpoint')
     else:
       f_enco = file+'/Encodeur_checkpoint/'+str(step)
-      f_deco = file+'/dncodeur_checkpoint/'+str(step)
+      f_deco = file+'/Decodeur_checkpoint/'+str(step)
 
     self.encodeur.load_weights(f_enco)
     self.decodeur.load_weights(f_deco)

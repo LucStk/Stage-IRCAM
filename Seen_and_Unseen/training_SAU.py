@@ -186,8 +186,8 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
                         tf.summary.audio('Reconstruct '+emo,rec_out, 24000,step=cpt)
 
             print("save")
-            Auto_Encodeur_SAU.save_weights(log_dir, format(cpt//len_train))
-            Discriminator_SAU.save_weights(log_dir, format(cpt//len_train))
+            auto_encodeur.save_weights(log_dir, format(cpt//len_train))
+            discriminator.save_weights(log_dir, format(cpt//len_train))
             raise "End Test"
 
 
