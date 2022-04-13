@@ -96,19 +96,7 @@ class ESD_data_generator(Sequence):
         else :
             x = np.array([remplissage(i, self.force_padding, pad = 0) for i in x])
         x = np.transpose(x, (0,2,1))
-        
-        x_     = tf.reshape(x,(-1, 80)) #format (b*lenght, 80)
-        lignes = np.repeat(np.arange(x.shape[0]),x.shape[1], axis = 0)
-        mask   = np.where(x_ == 0)[0]
-        x_     = np.delete(x_,mask, axis=0) # Delete le padding
-        lignes = np.delete(lignes, mask, axis=0)
-        ser_latent = self.ser.call_latent(x)
-        ser_latent = np.array(ser_latent)[lignes] #association latent -> lignes
-        l_order    = np.arange(len(x_))
-        np.random.shuffle(l_order)
-
-        return x_[l_order], ser_latent[l_order]
-
+        return x
 
 class ESD_data_generator_SAU(ESD_data_generator):
     def __init__(self, file_path, ser, batch_size=1, 
@@ -136,7 +124,18 @@ class ESD_data_generator_SAU(ESD_data_generator):
         else :
             x = np.array([remplissage(i, self.force_padding, pad = 0) for i in x])
         x = np.transpose(x, (0,2,1))
-        return x, y
+        
+        x_     = tf.reshape(x,(-1, 80)) #format (b*lenght, 80)
+        lignes = np.repeat(np.arange(x.shape[0]),x.shape[1], axis = 0)
+        mask   = np.where(x_ == 0)[0]
+        x_     = np.delete(x_,mask, axis=0) # Delete le padding
+        lignes = np.delete(lignes, mask, axis=0)
+        ser_latent = self.ser.call_latent(x)
+        ser_latent = np.array(ser_latent)[lignes] #association latent -> lignes
+        l_order    = np.arange(len(x_))
+        np.random.shuffle(l_order)
+
+        return x_[l_order], ser_latent[l_order]
 
 class ESD_batch_data_generator(Sequence):
     def __init__(self, file_path, batch_size=1,batch_size_2=1, shuffle=True, 

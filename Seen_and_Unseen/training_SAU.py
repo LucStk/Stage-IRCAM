@@ -159,7 +159,6 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
                     tf.summary.scalar('test/loss_discriminateur_true',l_true, step=cpt)
                     tf.summary.scalar('test/loss_discriminateur_false',l_false, step=cpt)
                     tf.summary.scalar('test/mdc',mdc , step=cpt)
-                
                 break
             test_dataloader.shuffle()
 
