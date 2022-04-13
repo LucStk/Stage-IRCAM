@@ -137,12 +137,15 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
 
                 ser_latent = ser.call_latent(x)
                 ser_latent = np.array(ser_latent)[lignes] #association latent -> lignes
-                l_order = np.arange(len(x_))
+                l_order    = np.arange(len(x_))
 
                 np.random.shuffle(l_order)
 
-                x_ = x_[l_order][:500]
-                ser_latent = ser_latent[l_order][:500]
+                print('test ', x_.shape, ser_latent.shape)
+                x_ = x_[l_order]
+                x_ = x_[:500]
+                ser_latent = ser_latent[l_order]
+                ser_latent = ser_latent[:500]
 
                 out  = auto_encodeur(x_, ser_latent)
                 
