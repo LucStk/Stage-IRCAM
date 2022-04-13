@@ -138,14 +138,13 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
                 l_order = np.arange(len(x_))
 
                 np.random.shuffle(l_order)
+                l_order = l_order[:500]
 
                 print('test ', x_.shape, ser_latent.shape)
-                x_ = x_[l_order]
-                x_ = x_[:500]
+                x_         = x_[l_order]
                 ser_latent = ser_latent[l_order]
-                ser_latent = ser_latent[:500]
 
-                out  = auto_encodeur(x_, ser_latent)
+                out = auto_encodeur(x_, ser_latent)
                 
                 # Apprentissage générateur
                 d_gen = discriminator(out)
