@@ -232,13 +232,14 @@ if __name__ == "__main__":
                 raise Exception('Data not found')
         
         BATCH_SIZE = 256
+        BATCH_SIZE_TEST = 50
         SHUFFLE    = True
         LANGAGE    = "english"
         USE_DATA_QUEUE = True
         load_path     = ov.get('--load')
         load_SER_path = ov.get('--load_SER')
-        train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
-                                                                    LANGAGE, USE_DATA_QUEUE,)
+        train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, 
+                                                BATCH_SIZE_TEST,SHUFFLE, LANGAGE, USE_DATA_QUEUE,)
         print("test_dataloader")
         for i in train_dataloader:
             print("ok")
@@ -254,13 +255,14 @@ if __name__ == "__main__":
     else:
         FILEPATH = r"/home/luc/Documents/STAGE_IRCAM/data/ESD_Mel/"
         BATCH_SIZE = 30
+        USE_DATA_QUEUE = True
         SHUFFLE    = True
         LANGAGE    = "english"
         USE_DATA_QUEUE = False
         load_path = ov.get('--load')
         load_SER_path = ov.get('--load_SER') 
-        train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, SHUFFLE, 
-                                                                    LANGAGE, USE_DATA_QUEUE)
+        train_dataloader, test_dataloader, data_queue, len_train = dataloader(FILEPATH, BATCH_SIZE, 
+                                            BATCH_SIZE_TEST, SHUFFLE, LANGAGE, USE_DATA_QUEUE,)
         train(FILEPATH, train_dataloader, test_dataloader, len_train, test = True,
              load_path=load_path, load_SER_path = load_SER_path)
         if data_queue:
