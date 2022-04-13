@@ -96,7 +96,7 @@ class ESD_data_generator(Sequence):
         else :
             x = np.array([remplissage(i, self.force_padding, pad = 0) for i in x])
         x = np.transpose(x, (0,2,1))
-        return x
+        return x,y
 
 class ESD_data_generator_SAU(ESD_data_generator):
     def __init__(self, file_path, ser, batch_size=1, 
