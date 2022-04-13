@@ -443,7 +443,7 @@ class Discriminator_SAU(tf.keras.Model):
       f = tf.train.latest_checkpoint(file+'/Discriminator')
     else:
       f = file+'/Discriminator/'+str(step)
-    super.load_weights(f)
+    super.load_weights(f, step)
 
   def call(self, x):
     """

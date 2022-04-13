@@ -181,8 +181,6 @@ def train(FILE_PATH, train_dataloader, test_dataloader, len_train,
                     for i, emo in enumerate(l_emotion):
                         tmp = np.expand_dims(l_mean_latent_ser[i], axis = 0)
                         phi = np.repeat(tmp, x.shape[0], axis = 0)
-                        print("exec", phi.shape, x.shape)
-                        
                         out  = auto_encodeur(x, phi)
                         rec_out = mel_inv.convert(de_normalisation(out))
                         tf.summary.audio('Reconstruct '+emo,rec_out, 24000,step=cpt)
