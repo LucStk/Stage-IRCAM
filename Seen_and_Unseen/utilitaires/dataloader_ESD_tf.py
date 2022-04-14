@@ -134,10 +134,10 @@ class ESD_data_generator_ALL_SAU(Sequence):
         b_size = 100
         for deb,end in zip(range(0,len(x)+b_size,b_size), range(b_size,len(x)+b_size,b_size)):
             ret.append(ser.call_latent(auto_padding(x[deb:end])))
-            print('|', end="")
+            print('|', end="", flush=True)
+        print("latent created")
 
         z = np.concatenate(ret, axis = 0)
-        print("latent created",z.shape)
         y  = [list_emotions.index(re.findall("((?:\w|\.)+)", l)[-3]) for l in self.dataname]
         
         x_size = np.array([i.shape[1] for i in x])

@@ -189,6 +189,7 @@ with tf.device(comp_device) :
 
         if (cpt+1) % len_test_dataloader == 0:
             print("End batch")
+            print("Creation audio sample")
             """
             Pour un échantillon neutre, effectue une EVC avec toutes les
             émotions.
@@ -208,4 +209,3 @@ with tf.device(comp_device) :
             print("save")
             auto_encodeur.save_weights(log_dir, format(cpt//len_train_dataloader))
             discriminator.save_weights(log_dir, format(cpt//len_train_dataloader))
-            raise 
