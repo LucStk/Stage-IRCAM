@@ -142,8 +142,8 @@ class ESD_data_generator_ALL_SAU(Sequence):
         y  = [list_emotions.index(re.findall("((?:\w|\.)+)", l)[-3]) for l in self.dataname]
         
         x_size = np.array([i.shape[1] for i in x])
-        self.z = tf.multiply(z, x_size, axis = 0) #format (None, 128)
-        self.y = tf.multiply(y, x_size, axis = 0)
+        self.z = tf.repeat(z, x_size, axis = 0) #format (None, 128)
+        self.y = tf.repeat(y, x_size, axis = 0)
 
         x = tf.concat(x,axis = 1) # format (80, None)
         self.x = tf.transpose(x) # format (None, 80)
