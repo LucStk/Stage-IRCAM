@@ -104,8 +104,8 @@ with tf.device(comp_device) :
         except:
             print("ser not load succesfully from"+os.getcwd()+load_path)
             raise Exception('No SER load')
-    else:
-        raise Exception("No SER path, please give one")
+    #else:
+    #    raise Exception("No SER path, please give one")
 
     #Création des summary
     log_dir        = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -142,7 +142,6 @@ with tf.device(comp_device) :
         optimizer.apply_gradients(zip(grad_disc, discriminator.trainable_variables))
 
         mdc = MDC_1D(out, x)
-
         with summary_writer.as_default(): 
             tf.summary.scalar('train/loss_generateur',l_gen, step=cpt)
             tf.summary.scalar('train/loss_discriminateur',l_disc, step=cpt)
