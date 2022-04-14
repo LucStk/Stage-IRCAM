@@ -174,7 +174,10 @@ class ESD_data_generator_ALL_SAU(Sequence):
         sortie : x(n_batch*lenght, 80), latent(n_batch*lenght, 128)
         """
         indices = self.order[idx*self.batch_size:(idx+1)*self.batch_size]
-        return self.x[indices],self.z[indices],self.y[indices]
+        x = tf.gather(self.x, indices=indices)
+        z = tf.gather(self.z, indices=indices)
+        y = tf.gather(self.y, indices=indices)
+        return x,z,y
 
 class ESD_batch_data_generator(Sequence):
     def __init__(self, file_path, batch_size=1,batch_size_2=1, shuffle=True, 
