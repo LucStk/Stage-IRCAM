@@ -38,6 +38,7 @@ def dataloader(FILEPATH, batch_size=30, batch_size_test = 50, shuffle=True,
 
 def dataloader_SAU(FILEPATH, batch_size=30, batch_size_test = 50, shuffle=True, 
                langage = 'english', use_data_queue= False):
+
     data_queue = None
     train_dataloader = ESD_data_generator(FILEPATH, batch_size, shuffle, langage)
     len_train = len(train_dataloader)
@@ -45,7 +46,8 @@ def dataloader_SAU(FILEPATH, batch_size=30, batch_size_test = 50, shuffle=True,
         print("begin data_queue")
         data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
         data_queue.start()
-        train_dataloader = data_queue.get()    
+        train_dataloader = data_queue.get()
+            
     test_dataloader = ESD_data_generator(FILEPATH, batch_size_test, langage=langage, type_='test',shuffle=True)
     return train_dataloader, test_dataloader, data_queue, len_train
 
