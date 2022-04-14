@@ -138,7 +138,8 @@ with tf.device(comp_device) :
 
     print("Every thing ready, beging training")
     for cpt, (x,z,y) in enumerate(train_dataloader):
-        print(cpt)
+        if (cpt % 10 == 0):
+            print(cpt)
         x = normalisation(x)
         with tf.GradientTape() as tape_gen: #, tf.GradientTape() as tape_disc:
             # Apprentissage générateur
