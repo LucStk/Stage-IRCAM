@@ -490,10 +490,13 @@ class SER(tf.keras.Model):
     self.bi_lstm = layers.Bidirectional(
                             layers.LSTM(64, 
                                         activation = act_rnn, 
-                                        return_sequences=False,
+                                        return_sequences=True,
                                         dropout=0.2))  
  
     self.W = layers.Dense(1)
+    self.H = tf.keras.models.Sequential([
+      layers.Dense(5),])
+    """
     self.H = tf.keras.models.Sequential([
       layers.Dense(64, activation=act_dens),
       layers.Dropout(.2),
@@ -501,24 +504,29 @@ class SER(tf.keras.Model):
       layers.Dropout(.2),
       layers.Dense(5),
     ])#Nombre d'étiquettes
-
+    """
   def call_latent(self, x):
     x = tf.expand_dims(x, axis=-1)
     x = self.conv(x)
     x = tf.reshape(x, (x.shape[0], -1, 128))
-    x = self.lstm_1(x)
+    #x = self.lstm_1(x)
     x = self.bi_lstm(x)
+    x = self.attention(x)
     return x
 
+  def attention(self,x):
+    alpha = tf.keras.activations.softmax(self.W(x), axis = 1)
+    alpha = tf.repeat(alpha, repeats=x.shape[-1], axis = -1)
+    x     = tf.math.reduce_sum(tf.math.multiply(x,alpha), axis = 1)  
+    return x
+  
   def call(self, x):
     x = tf.expand_dims(x, axis=-1)
     x = self.conv(x)
     x = tf.reshape(x, (x.shape[0], -1, 128))
-    x = self.lstm_1(x)
+    #x = self.lstm_1(x)
     x = self.bi_lstm(x)
-    #alpha = tf.keras.activations.softmax(self.W(x), axis = 1)
-    #alpha = tf.repeat(alpha, repeats=x.shape[-1], axis = -1)
-    #x = tf.math.reduce_sum(tf.math.multiply(x,alpha), axis = 1)  
+    x = self.attention(x)
     x = self.H(x)
     #x = tf.keras.activations.softmax(x)
     

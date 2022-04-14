@@ -88,6 +88,10 @@ with tf.device(comp_device) :
     ser = SER()
     BCE = tf.keras.losses.BinaryCrossentropy()
 
+    #################################################################
+    #                       Préparation data                        #
+    #################################################################
+
     train_dataloader = ESD_data_generator_ALL_SAU(FILEPATH, ser, 
                                                   batch_size=BATCH_SIZE_TRAIN,
                                                   langage=LANGAGE)
@@ -138,8 +142,7 @@ with tf.device(comp_device) :
 
     print("Every thing ready, beging training")
     for cpt, (x,z,y) in enumerate(train_dataloader):
-        if (cpt % 10 == 0):
-            print(cpt)
+        if (cpt % 10 == 0): print(cpt)
         x = normalisation(x)
         with tf.GradientTape() as tape_gen: #, tf.GradientTape() as tape_disc:
             # Apprentissage générateur
@@ -165,9 +168,9 @@ with tf.device(comp_device) :
             tf.summary.scalar('train/loss_discriminateur',l_disc, step=cpt)
             tf.summary.scalar('train/mdc',mdc , step=cpt)
 
-        """
-        TEST
-        """
+        #################################################################
+        #                           TEST                                #
+        #################################################################
         if (cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
             (x,z,y) = test_dataloader[cpt%len_test_dataloader]
             x = normalisation(x)
