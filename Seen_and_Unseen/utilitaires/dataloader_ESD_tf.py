@@ -129,7 +129,7 @@ class ESD_data_generator_ALL_SAU(Sequence):
         
         x  = [pd.read_pickle(f) for f in self.dataname]
         #Calculate ser score 
-        x   = auto_padding(x)
+        print("mel load")
         ret = []
         b_size = 100
         for deb,end in zip(range(0,len(x),b_size), range(b_size,len(x),b_size)):
@@ -137,6 +137,7 @@ class ESD_data_generator_ALL_SAU(Sequence):
             print(deb)
 
         z = np.concatenate(ret, axis = 0)
+        print("latent created",z.shape)
         #z  = [ser.call_latent(np.expand_dims(i,axis=0)) for i in x]
         y  = [list_emotions.index(re.findall("((?:\w|\.)+)", l)[-3]) for l in self.data_name]
         
