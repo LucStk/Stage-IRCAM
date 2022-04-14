@@ -77,9 +77,9 @@ BATCH_SIZE = 256
 load_path     = ov.get('--load')
 load_SER_path = ov.get('--load_SER')
 
-#with tf.device(comp_device) :
+#
 #with tf.device('/job:foo'):
-if True : 
+with tf.device(comp_device) :
 
     print("Training Beging")
     optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
@@ -136,10 +136,9 @@ if True :
     l_mean_latent_ser = mean_SER_emotion(FILEPATH, ser, 100)
     echantillon       = emotion_echantillon(FILEPATH)
 
-    print("test")
-    print("Every thing is ready")
+    print("Every thing ready, beging training")
     for cpt, (x,z,y) in enumerate(train_dataloader):
-        
+        print(cpt)
         x = normalisation(x)
         with tf.GradientTape() as tape_gen: #, tf.GradientTape() as tape_disc:
             # Apprentissage générateur
@@ -168,7 +167,7 @@ if True :
         """
         TEST
         """
-        if True:#(cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
+        if (cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
             (x,z,y) = test_dataloader[cpt%len_test_dataloader]
             x = normalisation(x)
             out = auto_encodeur(x, z)
@@ -187,7 +186,7 @@ if True :
                 tf.summary.scalar('test/loss_discriminateur_false',l_false, step=cpt)
                 tf.summary.scalar('test/mdc',mdc , step=cpt)
 
-        if True :#(cpt+1) % len_test_dataloader == 0:
+        if (cpt+1) % len_test_dataloader == 0:
             print("End batch")
             """
             Pour un échantillon neutre, effectue une EVC avec toutes les
@@ -208,4 +207,4 @@ if True :
             print("save")
             auto_encodeur.save_weights(log_dir, format(cpt//len_train_dataloader))
             discriminator.save_weights(log_dir, format(cpt//len_train_dataloader))
-        raise 
+            raise 

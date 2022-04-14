@@ -105,7 +105,7 @@ def train(train_dataloader, test_dataloader, len_train,
         if (cpt+1) % len_train == 0:
             print("End batch")
             print("save")
-            Model.save_weights(log_dir, format(cpt//len_train))
+            Model.save_weights(log_dir+"/SER", format(cpt//len_train))
 
 if __name__ == "__main__":
     longoptions = ['lock=', 'place=', 'load=']
