@@ -98,6 +98,73 @@ class ESD_data_generator(Sequence):
         x = np.transpose(x, (0,2,1))
         return x,y
 
+class ESD_data_generator_load(Sequence):
+    def __init__(self, file_path, batch_size=1, shuffle=True, 
+                 langage=None, type_ = 'train', transform=None,
+                 force_padding = None):
+        """
+        file_path (string) : chemin du fichier ESD_mell 
+        transform (callable, optional) : Optional transformation à appliquer
+        language : chinese, english ou None, si None prend les deux langues
+        type_ : train, test, validation, default train
+        force_padding : None ou int, padding à appliqué sur les batch. 
+                        Si None, padding avec le plus grand échantillions du batch 
+        """
+        list_emotions = ['Angry', "Happy", "Neutral", "Sad", "Surprise"]
+        if type_ not in ['train', 'test', 'validation']:
+            raise 'InputError {} is not a valide type'.format(type_)
+
+        def filtre_lg(l, lg): # Selection english or chinese audio or both
+            dict_lg = {"english": "([0]{2}(?:[1][1-9]|[2][0]))", 
+                       "chinese" :"([0]{2}(?:[0]\d|[1][0]))", 
+                       None : ".*"}
+            ret = []
+            for i in l:
+                i = i.__str__() #Only work if the directory is named ESD
+                if re.match('(?:.*\/ESD_Mel\/'+dict_lg[lg]+')',i):
+                    ret += [i]
+            return ret
+
+        p = Path(file_path)
+        self.dataname = filtre_lg(p.glob('**/{}/*.p'.format(type_)), langage)        
+        
+        self.x = np.array([pd.read_pickle(f) for f in self.dataname], dtype=object)
+        self.y = np.array([list_emotions.index(re.findall("((?:\w|\.)+)", l)[-3]) for l in self.dataname], dtype=object)
+
+        self.sh    = shuffle
+        self.file_path  = file_path
+        self.transform  = transform
+        self.batch_size = batch_size
+        self.force_padding = force_padding
+        self.order = np.arange(len(self.x))
+        if self.sh: self.shuffle()
+
+    def __len__(self):
+        return math.ceil(len(self.dataset)/self.batch_size)
+
+    def shuffle(self):
+        np.random.shuffle(self.order)
+
+    def on_epoch_end(self):
+        if self.sh: self.shuffle()
+
+    def __getitem__(self, idx):
+        """
+        Applique le ser sur les items
+        labels : 0 : Angry, 1 : Happy, 2: Neutral, 3: Sad, 4: Surprise
+        sortie : x(n_batch*lenght, 80), latent(n_batch*lenght, 128)
+        """
+        indices = self.order[idx*self.batch_size:(idx+1)*self.batch_size]
+        x = self.x[indices]
+        y = self.y[indices]
+        if self.force_padding is None:
+            x = auto_padding(x)
+        else :
+            x = np.array([remplissage(i, self.force_padding, pad = 0) for i in x])
+        x = np.transpose(x, (0,2,1))
+        return x,y
+
+
 class ESD_data_generator_ALL_SAU(Sequence):
     def __init__(self, file_path, ser, batch_size=1, shuffle=True, 
                  langage=None, type_ = 'train'):
