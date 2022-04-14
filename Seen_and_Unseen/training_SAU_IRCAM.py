@@ -97,21 +97,15 @@ if True :
                                                   langage=LANGAGE,
                                                   type_='test')
 
+    len_train_dataloader = len(train_dataloader)
+    len_test_dataloader  = len(test_dataloader)
 
-    #Test dataloader
-    print(test_dataloader)
-    x,z,y = train_dataloader[0]
-    print(x.shape)
-    print(z.shape)
-    print(y.shape)
-    raise
     #Utilisation data_queue
     if True:
         print("begin data_queue")
         data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
         data_queue.start()
-        train_dataloader = data_queue.get()    
-
+        train_dataloader = data_queue.get()
     
     print("Data_loaders ready")
     if load_path is not None :
@@ -143,7 +137,6 @@ if True :
     echantillon       = emotion_echantillon(FILEPATH)
 
     print("test")
-
     print("Every thing is ready")
     for cpt, (x,z,y) in enumerate(train_dataloader):
         
@@ -175,8 +168,8 @@ if True :
         """
         TEST
         """
-        if True:#(cpt+1)%int(TEST_EPOCH*len(train_dataloader)) == 0:
-            (x,z,y) = test_dataloader[cpt%len(test_dataloader)]
+        if True:#(cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
+            (x,z,y) = test_dataloader[cpt%len_test_dataloader]
             x = normalisation(x)
             out = auto_encodeur(x, z)
             d_gen = discriminator(out)
@@ -194,7 +187,7 @@ if True :
                 tf.summary.scalar('test/loss_discriminateur_false',l_false, step=cpt)
                 tf.summary.scalar('test/mdc',mdc , step=cpt)
 
-        if True :#(cpt+1) % len(test_dataloader) == 0:
+        if True :#(cpt+1) % len_test_dataloader == 0:
             print("End batch")
             """
             Pour un échantillon neutre, effectue une EVC avec toutes les
@@ -213,6 +206,6 @@ if True :
                     tf.summary.audio('Reconstruct '+emo,rec_out, 24000,step=cpt)
 
             print("save")
-            auto_encodeur.save_weights(log_dir, format(cpt//len(train_dataloader)))
-            discriminator.save_weights(log_dir, format(cpt//len(train_dataloader)))
+            auto_encodeur.save_weights(log_dir, format(cpt//len_train_dataloader))
+            discriminator.save_weights(log_dir, format(cpt//len_train_dataloader))
         raise 
