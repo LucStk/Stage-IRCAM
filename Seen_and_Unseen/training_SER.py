@@ -120,13 +120,12 @@ with tf.device(comp_device) :
         #                TEST                  #
         ########################################
 
-        if True: #((cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0):
+        if ((cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0):
             print('test_time')
             (x,y) = test_dataloader[cpt%len_test_dataloader]
 
             y_    = tf.one_hot(y,5)
             x     = normalisation(x) 
-            
             y_hat = Model(x)
             l = loss(y_,y_hat)
             
@@ -135,7 +134,7 @@ with tf.device(comp_device) :
                 tf.summary.scalar('test/loss',l, step=cpt)
                 tf.summary.scalar('test/acc',acc, step=cpt)
 
-        if True:#(cpt+1) % len_train_dataloader == 0:
+        if (cpt+1) % len_train_dataloader == 0:
             print("End batch")
             print("save")
             Model.save_weights(log_dir+"/SER", format(cpt//len_train_dataloader))
