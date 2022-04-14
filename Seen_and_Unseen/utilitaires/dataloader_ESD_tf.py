@@ -125,7 +125,7 @@ class ESD_data_generator_ALL_SAU(Sequence):
             return ret
 
         p = Path(file_path)
-        self.dataname = filtre_lg(p.glob('**/{}/*.p'.format(type_)), langage)[:1000]
+        self.dataname = filtre_lg(p.glob('**/{}/*.p'.format(type_)), langage)[:30]
         
         x  = [pd.read_pickle(f) for f in self.dataname]
         #Calculate ser score 
@@ -138,7 +138,6 @@ class ESD_data_generator_ALL_SAU(Sequence):
 
         z = np.concatenate(ret, axis = 0)
         print("latent created",z.shape)
-        #z  = [ser.call_latent(np.expand_dims(i,axis=0)) for i in x]
         y  = [list_emotions.index(re.findall("((?:\w|\.)+)", l)[-3]) for l in self.dataname]
         
         x_size = np.array([i.shape[1] for i in x])

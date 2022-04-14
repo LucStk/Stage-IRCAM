@@ -27,8 +27,6 @@ longoptions = ['lock=', 'load=', 'load_SER=']
 ov, ra = getopt.getopt(sys.argv[1:], "", longoptions)
 ov = dict(ov)
 
-print("ircam connexion")
-import manage_gpus as gpl
 lck = ov.get("--lock")
 if lck is None:
     soft = None
@@ -36,10 +34,11 @@ if lck is None:
 elif lck.lower() == "soft": soft = True
 elif lck.lower() == "hard": soft = False 
 else:
-    print("WARNING : No lock taken")
+    print("WARNING : lock arg not recognized, No lock taken")
     soft = None
 
 if soft is not None:
+    import manage_gpus as gpl
     try:
         gpu_id_locked = gpl.get_gpu_lock(gpu_device_id=-1, soft=soft)
         comp_device = "/GPU:0"
@@ -52,17 +51,21 @@ if soft is not None:
         os.environ["CUDA_VISIBLE_DEVICES"]=""
 
 try:
-    FILEPATH = r"/data2/anasynth_nonbp/sterkers/ESD_Mel/"
+    FILEPATH = r"/home/luc/Documents/STAGE_IRCAM/data/ESD_Mel/"
     os.listdir(FILEPATH)
 except:
     try:
-        FILEPATH = r"/data/anasynth_nonbp/sterkers/ESD_Mel/"
+        FILEPATH = r"/data2/anasynth_nonbp/sterkers/ESD_Mel/"
         os.listdir(FILEPATH)
     except:
-        raise Exception('Data not found')
+        try:
+            FILEPATH = r"/data/anasynth_nonbp/sterkers/ESD_Mel/"
+            os.listdir(FILEPATH)
+        except:
+            raise Exception('Data not found')
 
 BATCH_SIZE_TRAIN = 256
-BATCH_SIZE_TEST = 50
+BATCH_SIZE_TEST = 30
 SHUFFLE    = True
 LANGAGE    = "english"
 
@@ -74,7 +77,10 @@ BATCH_SIZE = 256
 load_path     = ov.get('--load')
 load_SER_path = ov.get('--load_SER')
 
-with tf.device(comp_device) :
+#with tf.device(comp_device) :
+#with tf.device('/job:foo'):
+if True : 
+
     print("Training Beging")
     optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
     auto_encodeur = Auto_Encodeur_SAU()
@@ -90,6 +96,23 @@ with tf.device(comp_device) :
                                                   batch_size=BATCH_SIZE_TEST,
                                                   langage=LANGAGE,
                                                   type_='test')
+
+
+    #Test dataloader
+    print(test_dataloader)
+    x,z,y = train_dataloader[0]
+    print(x.shape)
+    print(z.shape)
+    print(y.shape)
+    raise
+    #Utilisation data_queue
+    if True:
+        print("begin data_queue")
+        data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
+        data_queue.start()
+        train_dataloader = data_queue.get()    
+
+    
     print("Data_loaders ready")
     if load_path is not None :
         try:
@@ -119,6 +142,7 @@ with tf.device(comp_device) :
     l_mean_latent_ser = mean_SER_emotion(FILEPATH, ser, 100)
     echantillon       = emotion_echantillon(FILEPATH)
 
+    print("test")
 
     print("Every thing is ready")
     for cpt, (x,z,y) in enumerate(train_dataloader):
