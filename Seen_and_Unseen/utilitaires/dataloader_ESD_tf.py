@@ -128,7 +128,8 @@ class ESD_data_generator_load(Sequence):
         p = Path(file_path)
         self.dataname = filtre_lg(p.glob('**/{}/*.p'.format(type_)), langage)
         self.x    = np.empty(len(self.dataname))
-        self.x[:] = [pd.read_pickle(f) for f in self.dataname]
+        a = [pd.read_pickle(f) for f in self.dataname]
+        self.x[:] = a
         self.y = np.array([list_emotions.index(re.findall("((?:\w|\.)+)", l)[-3]) for l in self.dataname])
 
         self.sh    = shuffle
