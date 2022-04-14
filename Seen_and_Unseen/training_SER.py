@@ -59,11 +59,10 @@ except:
 
 
 BATCH_SIZE_TRAIN = 56
-BATCH_SIZE_TEST  = 100
+BATCH_SIZE_TEST  = 200
 SHUFFLE    = True
 LANGAGE    = "english"
 USE_DATA_QUEUE = True
-EPOCH = 100
 LR = 1e-5
 TEST_EPOCH = 1/2
 load_path = ov.get('--load')

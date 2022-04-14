@@ -127,10 +127,9 @@ class ESD_data_generator_load(Sequence):
 
         p = Path(file_path)
         self.dataname = filtre_lg(p.glob('**/{}/*.p'.format(type_)), langage)
-        a = [pd.read_pickle(f) for f in self.dataname]
-        print("ok")
-        self.x = tf.ragged.constant(a)
-        self.y = tf.constant([list_emotions.index(re.findall("((?:\w|\.)+)", l)[-3]) for l in self.dataname])
+        self.x    = np.empty(len(self.dataname))
+        self.x[:] = [pd.read_pickle(f) for f in self.dataname]
+        self.y = np.array([list_emotions.index(re.findall("((?:\w|\.)+)", l)[-3]) for l in self.dataname])
 
         self.sh    = shuffle
         self.file_path  = file_path
@@ -156,8 +155,8 @@ class ESD_data_generator_load(Sequence):
         sortie : x(n_batch*lenght, 80), latent(n_batch*lenght, 128)
         """
         indices = self.order[idx*self.batch_size:(idx+1)*self.batch_size]
-        x = tf.gather(self.x, indices=indices)
-        y = tf.gather(self.y, indices=indices)
+        x = self.x[indices]
+        y = self.y[indices]
 
         if self.force_padding is None:
             x = auto_padding(x)
