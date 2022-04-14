@@ -495,10 +495,6 @@ class SER(tf.keras.Model):
  
     self.W = layers.Dense(1)
     self.H = tf.keras.models.Sequential([
-      layers.Dense(64, activation=act_dens),
-      layers.Dropout(.2),
-      layers.Dense(16, activation=act_dens),
-      layers.Dropout(.2),
       layers.Dense(5),])
     """
     self.H = tf.keras.models.Sequential([
@@ -513,7 +509,7 @@ class SER(tf.keras.Model):
     x = tf.expand_dims(x, axis=-1)
     x = self.conv(x)
     x = tf.reshape(x, (x.shape[0], -1, 128))
-    #x = self.lstm_1(x)
+    x = self.lstm_1(x)
     x = self.bi_lstm(x)
     x = self.attention(x)
     return x
@@ -525,12 +521,7 @@ class SER(tf.keras.Model):
     return x
   
   def call(self, x):
-    x = tf.expand_dims(x, axis=-1)
-    x = self.conv(x)
-    x = tf.reshape(x, (x.shape[0], -1, 128))
-    #x = self.lstm_1(x)
-    x = self.bi_lstm(x)
-    x = self.attention(x)
+    x = self.call_latent(x)
     x = self.H(x)
     #x = tf.keras.activations.softmax(x)
     
