@@ -30,6 +30,7 @@ else:
     print("WARNING : No lock taken")
     soft = None
 
+comp_device ="/cpu:0"
 if soft is not None:
     import manage_gpus as gpl
     try:

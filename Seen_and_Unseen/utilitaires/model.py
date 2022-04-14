@@ -495,6 +495,10 @@ class SER(tf.keras.Model):
  
     self.W = layers.Dense(1)
     self.H = tf.keras.models.Sequential([
+      layers.Dense(64, activation=act_dens),
+      layers.Dropout(.2),
+      layers.Dense(16, activation=act_dens),
+      layers.Dropout(.2),
       layers.Dense(5),])
     """
     self.H = tf.keras.models.Sequential([
