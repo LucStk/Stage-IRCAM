@@ -80,8 +80,6 @@ load_SER_path = ov.get('--load_SER')
 #
 #with tf.device('/job:foo'):
 with tf.device(comp_device) :
-
-    print("Training Beging")
     optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
     auto_encodeur = Auto_Encodeur_SAU()
     discriminator = Discriminator_SAU()
@@ -171,7 +169,7 @@ with tf.device(comp_device) :
         #################################################################
         #                           TEST                                #
         #################################################################
-        if (cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
+        if True :#(cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
             (x,z,y) = test_dataloader[cpt%len_test_dataloader]
             x = normalisation(x)
             out = auto_encodeur(x, z)
@@ -189,6 +187,10 @@ with tf.device(comp_device) :
                 tf.summary.scalar('test/loss_discriminateur_true',l_true, step=cpt)
                 tf.summary.scalar('test/loss_discriminateur_false',l_false, step=cpt)
                 tf.summary.scalar('test/mdc',mdc , step=cpt)
+
+        #################################################################
+        #                Audio-logs et sauvegarde                       #
+        #################################################################
 
         if (cpt+1) % len_test_dataloader == 0:
             print("End batch")
