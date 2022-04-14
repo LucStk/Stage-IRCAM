@@ -68,7 +68,7 @@ LR = 1e-5
 TEST_EPOCH = 1/2
 load_path = ov.get('--load')
 
-if True:#with tf.device(comp_device) :
+with tf.device(comp_device) :
     print("Data loading")
     train_dataloader = ESD_data_generator_load(FILEPATH, BATCH_SIZE_TRAIN, SHUFFLE, LANGAGE)
     test_dataloader  = ESD_data_generator_load(FILEPATH, BATCH_SIZE_TEST , SHUFFLE, LANGAGE, type_='test')
