@@ -128,7 +128,16 @@ class ESD_data_generator_ALL_SAU(Sequence):
         self.dataname = filtre_lg(p.glob('**/{}/*.p'.format(type_)), langage)
         
         x  = [pd.read_pickle(f) for f in self.dataname]
-        z  = [ser.call_latent(np.expand_dims(i,axis=0)) for i in x]
+        #Calculate ser score 
+        x   = auto_padding(x)
+        ret = []
+        b_size = 100
+        for deb,end in zip(range(0,len(x),b_size), range(b_size,len(x),b_size)):
+            ret.append(ser.call_latent(auto_padding(x[deb:end])))
+            print("ok")
+
+        z = np.concatenate(ret, axis = 0)
+        #z  = [ser.call_latent(np.expand_dims(i,axis=0)) for i in x]
         y  = [list_emotions.index(re.findall("((?:\w|\.)+)", l)[-3]) for l in self.data_name]
         
         x_size = np.array([i.shape[1] for i in x])

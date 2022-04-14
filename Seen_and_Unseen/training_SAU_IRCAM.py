@@ -78,8 +78,8 @@ with tf.device(comp_device) :
     print("Training Beging")
     optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
     auto_encodeur = Auto_Encodeur_SAU()
-    ser = SER()
     discriminator = Discriminator_SAU()
+    ser = SER()
     BCE = tf.keras.losses.BinaryCrossentropy()
 
     train_dataloader = ESD_data_generator_ALL_SAU(FILEPATH, ser, 
