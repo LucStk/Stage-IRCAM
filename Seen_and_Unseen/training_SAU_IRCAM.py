@@ -90,6 +90,7 @@ with tf.device(comp_device) :
                                                   batch_size=BATCH_SIZE_TEST,
                                                   langage=LANGAGE,
                                                   type_='test')
+    print("Data_loaders ready")
     if load_path is not None :
         try:
             auto_encodeur.load_weights(os.getcwd()+load_path)
