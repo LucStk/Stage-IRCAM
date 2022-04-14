@@ -126,8 +126,10 @@ class ESD_data_generator_load(Sequence):
             return ret
 
         p = Path(file_path)
-        self.dataname = filtre_lg(p.glob('**/{}/*.p'.format(type_)), langage)        
-        self.x = tf.ragged.constant([pd.read_pickle(f) for f in self.dataname])
+        self.dataname = filtre_lg(p.glob('**/{}/*.p'.format(type_)), langage)
+        a = [pd.read_pickle(f) for f in self.dataname]
+        print("ok")
+        self.x = tf.ragged.constant(a)
         self.y = tf.constant([list_emotions.index(re.findall("((?:\w|\.)+)", l)[-3]) for l in self.dataname])
 
         self.sh    = shuffle
