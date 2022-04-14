@@ -140,7 +140,7 @@ class ESD_data_generator_load(Sequence):
         if self.sh: self.shuffle()
 
     def __len__(self):
-        return math.ceil(len(self.dataset)/self.batch_size)
+        return math.ceil(len(self.dataname)/self.batch_size)
 
     def shuffle(self):
         np.random.shuffle(self.order)
