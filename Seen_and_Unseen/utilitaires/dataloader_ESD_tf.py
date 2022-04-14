@@ -132,7 +132,7 @@ class ESD_data_generator_ALL_SAU(Sequence):
         print("mel load")
         ret = []
         b_size = 100
-        for deb,end in zip(range(0,len(x),b_size), range(b_size,len(x),b_size)):
+        for deb,end in zip(range(0,len(x)+b_size,b_size), range(b_size,len(x)+b_size,b_size)):
             ret.append(ser.call_latent(auto_padding(x[deb:end])))
             print(deb)
 
