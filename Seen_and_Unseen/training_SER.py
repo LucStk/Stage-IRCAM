@@ -89,7 +89,7 @@ with tf.device(comp_device) :
     summary_writer = tf.summary.create_file_writer(log_dir)
 
     ################################
-    #  Entrainement
+    #          TRAINING            #
     ################################
 
     if load_path is not None :
