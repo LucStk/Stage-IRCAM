@@ -466,29 +466,29 @@ class SER(tf.keras.Model):
     self.conv = tf.keras.models.Sequential([
         layers.Masking(mask_value=0.),
 
-        layers.Conv2D(8, 5, activation=act_conv),
+        layers.Conv2D(4, 5, activation=act_conv),
         layers.MaxPool2D(pool_size=2),
         layers.BatchNormalization(),
         layers.Dropout(.2),
 
+        layers.Conv2D(8, 5, activation=act_conv),
+        layers.MaxPool2D(pool_size=2),
+        layers.BatchNormalization(),
+        layers.Dropout(.2),
+        
         layers.Conv2D(16, 5, activation=act_conv),
         layers.MaxPool2D(pool_size=2),
         layers.BatchNormalization(),
         layers.Dropout(.2),
         
-        layers.Conv2D(32, 5, activation=act_conv),
-        layers.MaxPool2D(pool_size=2),
-        layers.BatchNormalization(),
-        layers.Dropout(.2),
-        
-        layers.Conv2D(64, 5,activation=act_conv),
+        layers.Conv2D(32, 5,activation=act_conv),
     ])
-    self.lstm_1  = layers.GRU(128, 
+    self.lstm_1  = layers.GRU(64, 
                               activation = act_rnn, 
                               return_sequences = True,
                               dropout=0.2)
     self.bi_lstm = layers.Bidirectional(
-                            layers.LSTM(64, 
+                            layers.LSTM(32, 
                                         activation = act_rnn, 
                                         return_sequences=True,
                                         dropout=0.2))  
