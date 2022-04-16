@@ -459,9 +459,9 @@ class Discriminator_SAU(tf.keras.Model):
 class SER(tf.keras.Model):
   def __init__(self):
     super(SER, self).__init__()
-    act_rnn  = act.gelu
-    act_conv = act.gelu
-    act_dens = act.relu
+    act_rnn  = act.elu
+    act_conv = act.elu
+    act_dens = act.elu
 
     self.conv = tf.keras.models.Sequential([
         layers.Masking(mask_value=0.),
@@ -488,7 +488,7 @@ class SER(tf.keras.Model):
                               return_sequences = True,
                               dropout=0.2)
     self.bi_lstm = layers.Bidirectional(
-                            layers.LSTM(64, 
+                            layers.GRU(64, 
                                         activation = act_rnn, 
                                         return_sequences=True,
                                         dropout=0.2))  
