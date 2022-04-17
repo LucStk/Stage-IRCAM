@@ -1,4 +1,5 @@
 import os
+from sched import scheduler
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
 from utilitaires.dataloader_ESD_tf import ESD_data_generator
@@ -84,6 +85,9 @@ with tf.device(comp_device) :
     Model     = SER()
     optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
     loss      = tf.keras.losses.BinaryCrossentropy(from_logits = True)
+    def scheduler(epoch, lr):
+        if epoch % 20000 == 0:
+            return 
 
     log_dir        = "logs_SER/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     summary_writer = tf.summary.create_file_writer(log_dir)

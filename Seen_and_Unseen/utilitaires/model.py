@@ -509,7 +509,7 @@ class SER(tf.keras.Model):
     x = tf.expand_dims(x, axis=-1)
     x = self.conv(x)
     x = tf.reshape(x, (x.shape[0], -1, 128))
-    x = self.lstm_1(x)
+    #x = self.lstm_1(x)
     x = self.bi_lstm(x)
     x = self.attention(x)
     return x
