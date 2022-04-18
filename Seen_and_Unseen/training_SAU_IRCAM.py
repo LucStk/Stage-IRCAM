@@ -85,6 +85,25 @@ with tf.device(comp_device) :
     discriminator = Discriminator_SAU()
     ser = SER()
     BCE = tf.keras.losses.BinaryCrossentropy()
+    ################################################################
+    #                         Loading Model                        #
+    ################################################################
+
+    if load_path is not None :
+        try:
+            auto_encodeur.load_weights(os.getcwd()+load_path)
+            print('auto_encodeur load sucessfuly')
+        except:
+            print("auto_encodeur not load succesfully from"+os.getcwd()+load_path)
+
+    if load_SER_path is not None:
+        try:
+            ser.load_weights(os.getcwd()+load_path)
+            print('ser load sucessfuly')
+        except:
+            print("ser not load succesfully from"+os.getcwd()+load_path)
+            raise Exception('No SER load')
+
 
     #################################################################
     #                       Préparation data                        #
@@ -110,22 +129,6 @@ with tf.device(comp_device) :
         train_dataloader = data_queue.get()
     
     print("Data_loaders ready")
-    if load_path is not None :
-        try:
-            auto_encodeur.load_weights(os.getcwd()+load_path)
-            print('auto_encodeur load sucessfuly')
-        except:
-            print("auto_encodeur not load succesfully from"+os.getcwd()+load_path)
-
-    if load_SER_path is not None:
-        try:
-            ser.load_weights(os.getcwd()+load_path)
-            print('ser load sucessfuly')
-        except:
-            print("ser not load succesfully from"+os.getcwd()+load_path)
-            raise Exception('No SER load')
-    #else:
-    #    raise Exception("No SER path, please give one")
 
     #Création des summary
     log_dir        = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -193,7 +196,7 @@ with tf.device(comp_device) :
         #                Audio-logs et sauvegarde                       #
         #################################################################
 
-        if (cpt+1) % len_test_dataloader == 0:
+        if (cpt+1) % (10*len_test_dataloader) == 0:
             print("End batch")
             print("Creation audio sample")
             """
