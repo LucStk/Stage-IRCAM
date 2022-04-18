@@ -525,7 +525,7 @@ class SER(tf.keras.Model):
 
   def load_weights(self, file,  step = None):
     if step is None:
-      f = tf.train.latest_checkpoint(file+'/SER')
+      f = tf.train.latest_checkpoint(file+'/SER/')
     else:
       f = file+'/SER/'+str(step)
     super().load_weights(f)

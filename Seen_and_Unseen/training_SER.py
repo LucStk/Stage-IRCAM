@@ -71,6 +71,12 @@ load_path = ov.get('--load')
 
 with tf.device(comp_device) :
     Model     = SER()
+    optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
+    loss      = tf.keras.losses.BinaryCrossentropy(from_logits = True)
+    def scheduler(epoch, lr):
+        if epoch % 20000 == 0:
+            return 
+    
     if load_path is not None :
         try:
             Model.load_weights(os.getcwd()+load_path)
@@ -78,7 +84,6 @@ with tf.device(comp_device) :
         except:
             print("Load not succesful from"+os.getcwd()+load_path)
             raise
-
 
     print("Data loading")
     train_dataloader = ESD_data_generator_load(FILEPATH, BATCH_SIZE_TRAIN, SHUFFLE, LANGAGE)
@@ -92,22 +97,12 @@ with tf.device(comp_device) :
         data_queue.start()
         train_dataloader = data_queue.get()
 
-    Model     = SER()
-    optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
-    loss      = tf.keras.losses.BinaryCrossentropy(from_logits = True)
-    def scheduler(epoch, lr):
-        if epoch % 20000 == 0:
-            return 
-
     log_dir        = "logs_SER/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     summary_writer = tf.summary.create_file_writer(log_dir)
 
     ################################
     #          TRAINING            #
     ################################
-
-
-
     print("Training Beging")
     for cpt, (x,y) in enumerate(train_dataloader):
         print(cpt)
