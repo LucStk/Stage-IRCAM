@@ -193,7 +193,7 @@ class ESD_data_generator_ALL_SAU(Sequence):
             return ret
 
         p = Path(file_path)
-        self.dataname = filtre_lg(p.glob('**/{}/*.p'.format(type_)), langage)
+        self.dataname = filtre_lg(p.glob('**/{}/*.p'.format(type_)), langage)[500:]
         
         x  = [pd.read_pickle(f) for f in self.dataname]
         #Calculate ser score 
