@@ -161,7 +161,7 @@ with tf.device(comp_device) :
             d_false = discriminator(out)
             l_true  = BCE(tf.ones_like(d_true),d_true)
             l_false = BCE(tf.zeros_like(d_false),d_false)
-            l_disc  = tf.reduce_mean(tf.concat((l_true,l_disc),axis=1))
+            l_disc  = tf.reduce_mean(tf.concat((l_true,l_false),axis=1))
 
         grad_disc = tape_disc.gradient(l_disc, discriminator.trainable_variables)
         optimizer.apply_gradients(zip(grad_disc, discriminator.trainable_variables))
