@@ -101,7 +101,7 @@ with tf.device(comp_device) :
             ser.load_weights(os.getcwd()+load_SER_path)
             print('ser load sucessfuly')
         except:
-            print("ser not load succesfully from"+os.getcwd()+load_path)
+            print("ser not load succesfully from"+os.getcwd()+load_SER_path)
             raise
     else:
         raise Exception("No SER load")
