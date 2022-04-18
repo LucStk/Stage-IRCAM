@@ -70,7 +70,7 @@ SHUFFLE    = True
 LANGAGE    = "english"
 
 EPOCH = 100
-LR = 1e-5
+LR = 1e-4
 TEST_EPOCH = 1/2
 BATCH_SIZE = 256
 
@@ -84,7 +84,7 @@ with tf.device(comp_device) :
     auto_encodeur = Auto_Encodeur_SAU()
     discriminator = Discriminator_SAU()
     ser = SER()
-    BCE = tf.keras.losses.BinaryCrossentropy()
+    BCE = tf.keras.losses.BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
     ################################################################
     #                         Loading Model                        #
     ################################################################
@@ -132,7 +132,7 @@ with tf.device(comp_device) :
     print("Data_loaders ready")
 
     #Création des summary
-    log_dir        = "logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_dir        = "SAU_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     summary_writer = tf.summary.create_file_writer(log_dir)
     
     #Préparation enregistrement
@@ -150,7 +150,7 @@ with tf.device(comp_device) :
             # Apprentissage générateur
             out = auto_encodeur(x, z)
             d_gen = discriminator(out)
-            l_gen = BCE(tf.ones_like(d_gen),d_gen)
+            l_gen = tf.reduce_mean(BCE(tf.ones_like(d_gen),d_gen))
 
         grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.trainable_variables)
         optimizer.apply_gradients(zip(grad_gen, auto_encodeur.trainable_variables))
@@ -159,7 +159,9 @@ with tf.device(comp_device) :
             # Apprentissage générateur
             d_true  = discriminator(x)
             d_false = discriminator(out)
-            l_disc  = BCE(tf.ones_like(d_true),d_true)+BCE(tf.zeros_like(d_false),d_false)
+            l_true  = BCE(tf.ones_like(d_true),d_true)
+            l_false = BCE(tf.zeros_like(d_false),d_false)
+            l_disc  = tf.reduce_mean(tf.concat((l_true,l_disc),axis=1))
 
         grad_disc = tape_disc.gradient(l_disc, discriminator.trainable_variables)
         optimizer.apply_gradients(zip(grad_disc, discriminator.trainable_variables))
@@ -183,8 +185,8 @@ with tf.device(comp_device) :
 
             d_true  = discriminator(x)
             d_false = discriminator(tf.stop_gradient(out))
-            l_true  = BCE(np.ones(d_true.shape),d_true)
-            l_false = BCE(np.zeros(d_false.shape),d_false)
+            l_true  = tf.reduce_mean(BCE(np.ones(d_true.shape),d_true))
+            l_false = tf.reduce_mean(BCE(np.zeros(d_false.shape),d_false))
 
             mdc = MDC_1D(out, x)
             with summary_writer.as_default(): 
