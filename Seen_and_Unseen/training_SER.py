@@ -77,6 +77,7 @@ with tf.device(comp_device) :
             print('model load sucessfuly')
         except:
             print("Load not succesful from"+os.getcwd()+load_path)
+            raise
 
 
     print("Data loading")
