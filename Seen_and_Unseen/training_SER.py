@@ -70,6 +70,15 @@ TEST_EPOCH = 1/2
 load_path = ov.get('--load')
 
 with tf.device(comp_device) :
+    Model     = SER()
+    if load_path is not None :
+        try:
+            Model.load_weights(os.getcwd()+load_path)
+            print('model load sucessfuly')
+        except:
+            print("Load not succesful from"+os.getcwd()+load_path)
+
+
     print("Data loading")
     train_dataloader = ESD_data_generator_load(FILEPATH, BATCH_SIZE_TRAIN, SHUFFLE, LANGAGE)
     test_dataloader  = ESD_data_generator_load(FILEPATH, BATCH_SIZE_TEST , SHUFFLE, LANGAGE, type_='test')
@@ -96,12 +105,6 @@ with tf.device(comp_device) :
     #          TRAINING            #
     ################################
 
-    if load_path is not None :
-        try:
-            Model.load_weights(os.getcwd()+load_path)
-            print('model load sucessfuly')
-        except:
-            print("Load not succesful from"+os.getcwd()+load_path)
 
 
     print("Training Beging")
