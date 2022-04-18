@@ -496,15 +496,10 @@ class SER(tf.keras.Model):
     self.W = layers.Dense(1)
     self.H = tf.keras.models.Sequential([
       layers.Dense(5),])
-    """
-    self.H = tf.keras.models.Sequential([
-      layers.Dense(64, activation=act_dens),
-      layers.Dropout(.2),
-      layers.Dense(16, activation=act_dens),
-      layers.Dropout(.2),
-      layers.Dense(5),
-    ])#Nombre d'étiquettes
-    """
+
+  def transformer_block(self, x):
+    pass
+
   def call_latent(self, x):
     x = tf.expand_dims(x, axis=-1)
     x = self.conv(x)
@@ -522,12 +517,18 @@ class SER(tf.keras.Model):
   
   def call(self, x):
     x = self.call_latent(x)
-    x = self.H(x)
-    #x = tf.keras.activations.softmax(x)
-    
+    x = self.H(x)    
     return x
 
+  def save_weights(self, file, step):
+    super().save_weights(file+'/SER/'+str(step))
 
+  def load_weights(self, file,  step = None):
+    if step is None:
+      f = tf.train.latest_checkpoint(file+'/SER')
+    else:
+      f = file+'/SER/'+str(step)
+    super().load_weights(f, step)
 
 
 

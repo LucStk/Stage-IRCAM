@@ -80,7 +80,7 @@ with tf.device(comp_device) :
         print("begin data_queue")
         data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
         data_queue.start()
-        train_dataloader = data_queue.get()    
+        train_dataloader = data_queue.get()
 
     Model     = SER()
     optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
@@ -132,15 +132,15 @@ with tf.device(comp_device) :
             y_    = tf.one_hot(y,5)
             x     = normalisation(x) 
             y_hat = Model(x)
-            l = loss(y_,y_hat)
+            l     = loss(y_,y_hat)
             
             acc = np.mean(y == tf.math.argmax(y_hat, axis = 1))
             with summary_writer.as_default(): 
                 tf.summary.scalar('test/loss',l, step=cpt)
                 tf.summary.scalar('test/acc',acc, step=cpt)
 
-        if (cpt+1) % len_train_dataloader == 0:
+        if (cpt+1) % (10*len_train_dataloader) == 0:
             print("End batch")
             print("save")
-            Model.save_weights(log_dir+"/SER", format(cpt//len_train_dataloader))
+            Model.save_weights(log_dir, format(cpt//len_train_dataloader))
 
