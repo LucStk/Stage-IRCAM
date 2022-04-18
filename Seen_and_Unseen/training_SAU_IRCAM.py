@@ -102,8 +102,9 @@ with tf.device(comp_device) :
             print('ser load sucessfuly')
         except:
             print("ser not load succesfully from"+os.getcwd()+load_path)
-            raise Exception('No SER load')
-
+            raise
+    else:
+        raise Exception("No SER load")
 
     #################################################################
     #                       Préparation data                        #
