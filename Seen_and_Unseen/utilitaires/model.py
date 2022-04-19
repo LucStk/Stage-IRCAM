@@ -418,19 +418,18 @@ class Discriminator_SAU(tf.keras.Model):
     self.conv = tf.keras.models.Sequential([
         layers.Masking(mask_value=0.),
         
+        layers.Conv1D(8, 4, activation=act_conv),
+        layers.MaxPool1D(pool_size=4),
+        layers.BatchNormalization(),
+        
         layers.Conv1D(16, 4, activation=act_conv),
         layers.MaxPool1D(pool_size=4),
         layers.BatchNormalization(),
         
         layers.Conv1D(32, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=4),
-        layers.BatchNormalization(),
-        
-        layers.Conv1D(128, 4, activation=act_conv),
     ])
     self.H = tf.keras.models.Sequential([
       layers.Flatten(),
-      layers.Dense(80, activation=act_dense),
       layers.Dense(30, activation=act_dense),
       layers.Dense(1, activation=act.sigmoid),
     ])

@@ -145,15 +145,20 @@ with tf.device(comp_device) :
     print("Every thing ready, beging training")
     for cpt, (x,z,y) in enumerate(train_dataloader):
         if (cpt % 10 == 0): print(cpt)
+
+        #################################################################
+        #                           TRAINING                            #
+        #################################################################
+
         x = normalisation(x)
-        with tf.GradientTape() as tape_gen: #, tf.GradientTape() as tape_disc:
+        with tf.GradientTape() as tape_gen:
             # Apprentissage générateur
-            out = auto_encodeur(x, z)
+            out   = auto_encodeur(x, z)
             d_gen = discriminator(out)
             l_gen = tf.reduce_mean(BCE(tf.ones_like(d_gen),d_gen))
 
-        grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.trainable_variables)
-        optimizer.apply_gradients(zip(grad_gen, auto_encodeur.trainable_variables))
+        #grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.trainable_variables)
+        #optimizer.apply_gradients(zip(grad_gen, auto_encodeur.trainable_variables))
 
         with tf.GradientTape() as tape_disc:
             # Apprentissage générateur
@@ -181,7 +186,7 @@ with tf.device(comp_device) :
             x = normalisation(x)
             out = auto_encodeur(x, z)
             d_gen = discriminator(out)
-            l_gen = BCE(np.ones(d_gen.shape),d_gen)
+            l_gen = tf.reduce_mean(BCE(np.ones(d_gen.shape),d_gen))
 
             d_true  = discriminator(x)
             d_false = discriminator(tf.stop_gradient(out))
