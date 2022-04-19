@@ -70,7 +70,7 @@ SHUFFLE    = True
 LANGAGE    = "english"
 
 EPOCH = 100
-LR = 1e-4
+LR = 5e-5
 TEST_EPOCH = 1/2
 BATCH_SIZE = 256
 
@@ -157,8 +157,8 @@ with tf.device(comp_device) :
             d_gen = discriminator(out)
             l_gen = tf.reduce_mean(BCE(tf.ones_like(d_gen),d_gen))
 
-        #grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.trainable_variables)
-        #optimizer.apply_gradients(zip(grad_gen, auto_encodeur.trainable_variables))
+        grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.trainable_variables)
+        optimizer.apply_gradients(zip(grad_gen, auto_encodeur.trainable_variables))
 
         with tf.GradientTape() as tape_disc:
             # Apprentissage générateur
@@ -167,8 +167,6 @@ with tf.device(comp_device) :
             l_true  = BCE(tf.ones_like(d_true),d_true)
             l_false = BCE(tf.zeros_like(d_false),d_false)
             l_disc  = tf.reduce_mean(tf.concat((l_true,l_false),axis=0))
-
-            
 
         grad_disc = tape_disc.gradient(l_disc, discriminator.trainable_variables)
         optimizer.apply_gradients(zip(grad_disc, discriminator.trainable_variables))
@@ -197,11 +195,13 @@ with tf.device(comp_device) :
             l_true  = tf.reduce_mean(BCE(np.ones(d_true.shape),d_true))
             l_false = tf.reduce_mean(BCE(np.zeros(d_false.shape),d_false))
 
+            acc = (np.sum(d_true >= 0.5)+ np.sum(d_false < 0.5))/(2*len(d_false))
             mdc = MDC_1D(out, x)
             with summary_writer.as_default(): 
                 tf.summary.scalar('test/loss_generateur',l_gen, step=cpt)
                 tf.summary.scalar('test/loss_discriminateur_true',l_true, step=cpt)
                 tf.summary.scalar('test/loss_discriminateur_false',l_false, step=cpt)
+                tf.summary.scalar('test/acc',acc , step=cpt)
                 tf.summary.scalar('test/mdc',mdc , step=cpt)
 
         #################################################################
