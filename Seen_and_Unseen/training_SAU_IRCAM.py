@@ -70,7 +70,7 @@ SHUFFLE    = True
 LANGAGE    = "english"
 
 EPOCH = 100
-LR = 5e-5
+LR    = 1e-5
 TEST_EPOCH = 1/2
 BATCH_SIZE = 256
 
