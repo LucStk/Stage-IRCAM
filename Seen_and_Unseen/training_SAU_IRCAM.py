@@ -86,7 +86,7 @@ with tf.device(comp_device) :
     discriminator = Discriminator_SAU()
     ser = SER()
     BCE = tf.keras.losses.BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
-    MSE = tf.keras.losses.MSE(reduction=tf.keras.losses.Reduction.NONE)
+    MSE = tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.NONE)
     ################################################################
     #                         Loading Model                        #
     ################################################################
