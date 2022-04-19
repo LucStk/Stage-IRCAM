@@ -155,11 +155,14 @@ with tf.device(comp_device) :
         with tf.GradientTape() as tape_gen:
             # Apprentissage générateur
             out   = auto_encodeur(x, z)
-            d_gen = discriminator(out)
-            l_gen = tf.reduce_mean(BCE(tf.ones_like(d_gen),d_gen))
+            l_gen = tf.reduce_mean(BCE(x,out))
+
+            #d_gen = discriminator(out)
+            #l_gen = tf.reduce_mean(BCE(tf.ones_like(d_gen),d_gen))
 
         grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.trainable_variables)
         optimizer.apply_gradients(zip(grad_gen, auto_encodeur.trainable_variables))
+        
 
         with tf.GradientTape() as tape_disc:
             # Apprentissage générateur
