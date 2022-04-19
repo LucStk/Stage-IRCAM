@@ -80,7 +80,8 @@ load_SER_path = ov.get('--load_SER')
 #
 #with tf.device('/job:foo'):
 with tf.device(comp_device) :
-    optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
+    #optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
+    optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
     auto_encodeur = Auto_Encodeur_SAU()
     discriminator = Discriminator_SAU()
     ser = SER()

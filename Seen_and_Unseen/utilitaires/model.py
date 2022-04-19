@@ -347,10 +347,12 @@ class Encodeur_SAU(tf.keras.Model):
         layers.Conv1D(8, 4, activation=act_conv),
         layers.MaxPool1D(pool_size=4),
         layers.BatchNormalization(),
+        layers.Dropout(.2),
         
         layers.Conv1D(16, 4, activation=act_conv),
         layers.MaxPool1D(pool_size=4),
         layers.BatchNormalization(),
+        layers.Dropout(.2),
         
         layers.Conv1D(32, 4, activation=act_conv),
     ])
@@ -369,14 +371,17 @@ class Decodeur_SAU(tf.keras.Model):
         layers.UpSampling1D(size=4),
         layers.Conv1DTranspose(32, 4, activation=act_conv),
         layers.BatchNormalization(),
+        layers.Dropout(.2),
 
         layers.UpSampling1D(size=2),
         layers.Conv1DTranspose(16, 4, activation=act_conv),
         layers.BatchNormalization(),
+        layers.Dropout(.2),
         
         layers.UpSampling1D(size=2),
         layers.Conv1DTranspose(8, 4, activation=act_conv),
         layers.BatchNormalization(),
+        layers.Dropout(.2),
 
         layers.UpSampling1D(size=2),
         layers.Conv1DTranspose(1, 7, activation=act_conv),
@@ -421,10 +426,12 @@ class Discriminator_SAU(tf.keras.Model):
         layers.Conv1D(8, 4, activation=act_conv),
         layers.MaxPool1D(pool_size=4),
         layers.BatchNormalization(),
+        layers.Dropout(.2),
         
         layers.Conv1D(16, 4, activation=act_conv),
         layers.MaxPool1D(pool_size=4),
         layers.BatchNormalization(),
+        layers.Dropout(.2),
         
         layers.Conv1D(32, 4, activation=act_conv),
     ])
