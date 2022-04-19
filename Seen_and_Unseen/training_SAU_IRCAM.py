@@ -168,13 +168,17 @@ with tf.device(comp_device) :
             l_false = BCE(tf.zeros_like(d_false),d_false)
             l_disc  = tf.reduce_mean(tf.concat((l_true,l_false),axis=0))
 
+            
+
         grad_disc = tape_disc.gradient(l_disc, discriminator.trainable_variables)
         optimizer.apply_gradients(zip(grad_disc, discriminator.trainable_variables))
-
+        
+        acc = (np.sum(d_true >= 0.5)+ np.sum(d_false < 0.5))/(2*len(d_false))
         mdc = MDC_1D(out, x)
         with summary_writer.as_default(): 
             tf.summary.scalar('train/loss_generateur',l_gen, step=cpt)
             tf.summary.scalar('train/loss_discriminateur',l_disc, step=cpt)
+            tf.summary.scalar('train/acc',acc , step=cpt)
             tf.summary.scalar('train/mdc',mdc , step=cpt)
 
         #################################################################
