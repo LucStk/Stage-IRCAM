@@ -72,7 +72,7 @@ LANGAGE    = "english"
 
 EPOCH = 100
 LR    = 1e-5
-LR_AE = 1e-4
+LR_AE = 1e-3
 TEST_EPOCH = 1/2
 BATCH_SIZE = 256
 
