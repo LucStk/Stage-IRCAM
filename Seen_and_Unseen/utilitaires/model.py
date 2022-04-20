@@ -371,23 +371,23 @@ class Decodeur_SAU(tf.keras.Model):
     super(Decodeur_SAU, self).__init__()
     act_conv = act.elu
     self.convT = tf.keras.models.Sequential([
-        layers.UpSampling1D(size=4),
+        layers.UpSampling1D(size=2),
+        layers.Conv1DTranspose(64, 3, activation=act_conv),
+        layers.BatchNormalization(),
+
+        layers.UpSampling1D(size=2),
         layers.Conv1DTranspose(32, 4, activation=act_conv),
         layers.BatchNormalization(),
-        layers.Dropout(.2),
-
+        
         layers.UpSampling1D(size=2),
         layers.Conv1DTranspose(16, 4, activation=act_conv),
         layers.BatchNormalization(),
-        layers.Dropout(.2),
-        
-        layers.UpSampling1D(size=2),
-        layers.Conv1DTranspose(8, 4, activation=act_conv),
-        layers.BatchNormalization(),
-        layers.Dropout(.2),
 
-        layers.UpSampling1D(size=2),
-        layers.Conv1DTranspose(1, 7, activation=act_conv),
+        layers.UpSampling1D(size=3),
+        layers.Conv1DTranspose(8, 3, activation=act_conv),
+        layers.BatchNormalization(),
+
+        layers.Conv1DTranspose(1, 4, activation=act_conv),
     ])
   def call(self, x):
     """
@@ -407,11 +407,11 @@ class Auto_Encodeur_SAU(Auto_Encodeur_rnn):
 
   def call(self,x, phi):
     """
-    x   : (b*lenght, 80)
+    x   : (b*lenght, 128)
     phi : (b*lenght, 128)
     """
     phi = np.expand_dims(phi, axis=1) #(b*lenght, 1, 128)
-    latent = self.encodeur(x)#(b*lenght, 1, 80)
+    latent = self.encodeur(x)#(b*lenght, 1, 128)
     latent = tf.concat((phi,latent), axis = 2)
 
     out    = self.decodeur(latent)
