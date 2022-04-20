@@ -84,7 +84,7 @@ load_SER_path = ov.get('--load_SER')
 with tf.device(comp_device) :
     #optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
     optimizer    = tf.keras.optimizers.Adam(learning_rate = LR)
-    optimizer_AE = tf.keras.optimizers.RMSpror(learning_rate = LR_AE)
+    optimizer_AE = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
     auto_encodeur = Auto_Encodeur_SAU()
     discriminator = Discriminator_SAU()
     ser = SER()
