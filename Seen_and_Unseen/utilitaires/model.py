@@ -341,7 +341,7 @@ class Encodeur_SAU(tf.keras.Model):
   def __init__(self):
     super(Encodeur_SAU, self).__init__()
     act_conv = act.relu
-    conv = tf.keras.models.Sequential([
+    self.conv = tf.keras.models.Sequential([
         layers.Masking(mask_value=0.),
         
         layers.Conv1D(8, 4, activation=act_conv),
