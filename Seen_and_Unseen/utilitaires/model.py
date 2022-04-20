@@ -341,6 +341,24 @@ class Encodeur_SAU(tf.keras.Model):
   def __init__(self):
     super(Encodeur_SAU, self).__init__()
     act_conv = act.relu
+    conv = tf.keras.models.Sequential([
+        layers.Masking(mask_value=0.),
+        
+        layers.Conv1D(8, 4, activation=act_conv),
+        layers.MaxPool1D(pool_size=2),
+        layers.BatchNormalization(),
+        
+        layers.Conv1D(16, 4, activation=act_conv),
+        layers.MaxPool1D(pool_size=2),
+        layers.BatchNormalization(),
+        
+        layers.Conv1D(32, 4, activation=act_conv),
+        layers.MaxPool1D(pool_size=3),
+        layers.BatchNormalization(),
+
+        layers.Conv1D(64, 4, activation=act_conv),
+    ])
+    """
     self.conv = tf.keras.models.Sequential([
         layers.Masking(mask_value=0.),
         
@@ -361,7 +379,7 @@ class Encodeur_SAU(tf.keras.Model):
         
         layers.Conv1D(128, 2, activation=act_conv),
     ])
-    self.latent = layers.Dense(128)
+    """
   def call(self, x):
     x = tf.expand_dims(x, axis = -1)
     x = self.conv(x)
