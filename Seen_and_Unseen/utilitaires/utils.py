@@ -140,6 +140,6 @@ def MDC_1D(x_hat, x):
     sub = tf.math.subtract(tf.cast(x, tf.float64),tf.cast(x_hat, tf.float64))
     a = tf.math.pow(sub,2)
     a = tf.math.sqrt(tf.math.reduce_sum(a, axis=1))
-    a = tf.math.reduce_sum(a)/x.shape[0]
+    a = tf.math.reduce_mean(a)
     a *= (10/np.log(10))*np.sqrt(2)*STD_DATASET
     return a

@@ -345,18 +345,21 @@ class Encodeur_SAU(tf.keras.Model):
         layers.Masking(mask_value=0.),
         
         layers.Conv1D(8, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=4),
+        layers.MaxPool1D(pool_size=2),
         layers.BatchNormalization(),
-        layers.Dropout(.2),
         
         layers.Conv1D(16, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=4),
+        layers.MaxPool1D(pool_size=2),
         layers.BatchNormalization(),
-        layers.Dropout(.2),
         
         layers.Conv1D(32, 4, activation=act_conv),
+        layers.MaxPool1D(pool_size=2),
+        layers.BatchNormalization(),
+
+        layers.Conv1D(64, 4, activation=act_conv),
+        layers.MaxPool1D(pool_size=3),
     ])
-    self.latent = layers.Dense(64)
+    self.latent = layers.Dense(128)
   def call(self, x):
     x = tf.expand_dims(x, axis = -1)
     x = self.conv(x)
