@@ -72,6 +72,7 @@ LANGAGE    = "english"
 
 EPOCH = 100
 LR    = 1e-5
+LR_AE = 1e-4
 TEST_EPOCH = 1/2
 BATCH_SIZE = 256
 
@@ -82,7 +83,8 @@ load_SER_path = ov.get('--load_SER')
 #with tf.device('/job:foo'):
 with tf.device(comp_device) :
     #optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
-    optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
+    optimizer    = tf.keras.optimizers.Adam(learning_rate = LR)
+    optimizer_AE = tf.keras.optimizers.RMSpror(learning_rate = LR_AE)
     auto_encodeur = Auto_Encodeur_SAU()
     discriminator = Discriminator_SAU()
     ser = SER()
@@ -163,7 +165,7 @@ with tf.device(comp_device) :
             #l_gen = tf.reduce_mean(BCE(tf.ones_like(d_gen),d_gen))
 
         grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.trainable_variables)
-        optimizer.apply_gradients(zip(grad_gen, auto_encodeur.trainable_variables))
+        optimizer_AE.apply_gradients(zip(grad_gen, auto_encodeur.trainable_variables))
         
 
         with tf.GradientTape() as tape_disc:

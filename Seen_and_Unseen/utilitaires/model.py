@@ -357,13 +357,15 @@ class Encodeur_SAU(tf.keras.Model):
         layers.BatchNormalization(),
 
         layers.Conv1D(64, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=3),
+        layers.MaxPool1D(pool_size=2),
+        
+        layers.Conv1D(128, 2, activation=act_conv),
     ])
     self.latent = layers.Dense(128)
   def call(self, x):
     x = tf.expand_dims(x, axis = -1)
     x = self.conv(x)
-    x = self.latent(x)
+    #x = self.latent(x)
     return x
 
 class Decodeur_SAU(tf.keras.Model):
