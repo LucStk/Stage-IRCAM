@@ -47,6 +47,7 @@ if soft is not None:
         print("no gpu manager available - will use all available GPUs", file=sys.stderr)
     except gpl.NoGpuAvailable:
         # there is no GPU available for locking, continue with CPU
+        print("No GPU Available continue on CPU")
         comp_device = "/cpu:0" 
         os.environ["CUDA_VISIBLE_DEVICES"]=""
 
