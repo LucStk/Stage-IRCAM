@@ -173,6 +173,7 @@ with tf.device(comp_device) :
 
         if (cpt % 10 == 0): 
             print(cpt)
+            continue
             acc = tf.math.reduce_sum(tf.cast(d_true >= 0.5, dtype=tf.int32))+ tf.math.reduce_sum(tf.cast(d_false < 0.5, dtype=tf.int32))
             acc /= (2*len(d_false))
             mdc = MDC_1D(out, x)
