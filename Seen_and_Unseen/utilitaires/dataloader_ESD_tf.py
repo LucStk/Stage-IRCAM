@@ -198,7 +198,7 @@ class ESD_data_generator_ALL_SAU(Sequence):
         x  = [pd.read_pickle(f) for f in self.dataname]
         #Calculate ser score 
         print("mel load")
-        ret = []
+        ret    = []
         b_size = 100
         for deb,end in zip(range(0,len(x)+b_size,b_size), range(b_size,len(x)+b_size,b_size)):
             ret.append(ser.call_latent(auto_padding(x[deb:end])))
@@ -212,7 +212,7 @@ class ESD_data_generator_ALL_SAU(Sequence):
         self.z = tf.repeat(z, x_size, axis = 0) #format (None, 128)
         self.y = tf.repeat(y, x_size, axis = 0)
 
-        x = tf.concat(x,axis = 1) # format (80, None)
+        x      = tf.concat(x,axis = 1) # format (80, None)
         self.x = tf.transpose(x) # format (None, 80)
 
         self.order   = np.arange(len(self.x))

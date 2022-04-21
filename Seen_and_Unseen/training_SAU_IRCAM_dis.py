@@ -79,8 +79,9 @@ BATCH_SIZE = 256
 load_path     = ov.get('--load')
 load_SER_path = ov.get('--load_SER')
 
+#
+#with tf.device('/job:foo'):
 with tf.device(comp_device) :
-    tf.debugging.set_log_device_placement(True)
     #optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
     optimizer    = tf.keras.optimizers.Adam(learning_rate = LR)
     optimizer_AE = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
@@ -115,13 +116,13 @@ with tf.device(comp_device) :
     #################################################################
 
     train_dataloader = ESD_data_generator_ALL_SAU(FILEPATH, ser, 
-                                                  batch_size=BATCH_SIZE_TRAIN,
-                                                  langage=LANGAGE)
+                                                  batch_size = BATCH_SIZE_TRAIN,
+                                                  langage    = LANGAGE)
 
     test_dataloader  = ESD_data_generator_ALL_SAU(FILEPATH, ser, 
-                                                  batch_size=BATCH_SIZE_TEST,
-                                                  langage=LANGAGE,
-                                                  type_='test')
+                                                  batch_size = BATCH_SIZE_TEST,
+                                                  langage    = LANGAGE,
+                                                  type_      = 'test')
 
     len_train_dataloader = len(train_dataloader)
     len_test_dataloader  = len(test_dataloader)
