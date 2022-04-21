@@ -123,12 +123,10 @@ with tf.device(comp_device) :
     #Utilisation data_queue
     if True:
         print("begin data_queue")
-        data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
+        data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=True, shuffle=True)
         data_queue.start()
         train_dataloader = data_queue.get()
-    
     print("Data_loaders ready")
-
     if not no_metrics:
     #Création des summary
         log_dir        = "SAU_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
