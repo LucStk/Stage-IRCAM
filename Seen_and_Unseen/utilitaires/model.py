@@ -488,7 +488,7 @@ class Discriminator_SAU(tf.keras.Model):
 class SER(tf.keras.Model):
   def __init__(self):
     super(SER, self).__init__()
-    act_rnn  = act.elu
+    act_rnn  = act.tanh
     act_conv = act.elu
     act_dens = act.elu
 
