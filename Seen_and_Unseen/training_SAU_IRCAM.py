@@ -121,9 +121,9 @@ with tf.device(comp_device) :
     len_test_dataloader  = len(test_dataloader)
 
     #Utilisation data_queue
-    if False:
+    if True:
         print("begin data_queue")
-        data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=True, shuffle=True)
+        data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
         data_queue.start()
         train_dataloader = data_queue.get()
 
