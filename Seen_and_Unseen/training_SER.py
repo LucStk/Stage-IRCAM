@@ -78,8 +78,8 @@ with tf.device(comp_device) :
             raise
 
     print("Data loading")
-    train_dataloader = ESD_data_generator_load(FILEPATH, BATCH_SIZE_TRAIN, SHUFFLE, LANGAGE)
-    test_dataloader  = ESD_data_generator_load(FILEPATH, BATCH_SIZE_TEST , SHUFFLE, LANGAGE, type_='test')
+    train_dataloader = ESD_data_generator(FILEPATH, BATCH_SIZE_TRAIN, SHUFFLE, LANGAGE)
+    test_dataloader  = ESD_data_generator(FILEPATH, BATCH_SIZE_TEST , SHUFFLE, LANGAGE, type_='test')
     len_train_dataloader = len(train_dataloader)
     len_test_dataloader  = len(test_dataloader)
 
