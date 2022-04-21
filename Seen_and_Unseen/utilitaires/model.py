@@ -495,6 +495,75 @@ class SER(tf.keras.Model):
     self.conv = tf.keras.models.Sequential([
         layers.Masking(mask_value=0.),
 
+        layers.Conv2D(8, 5, activation=act_conv),
+        layers.MaxPool2D(pool_size=2),
+        layers.BatchNormalization(),
+        layers.Dropout(.2),
+
+        layers.Conv2D(16, 5, activation=act_conv),
+        layers.MaxPool2D(pool_size=2),
+        layers.BatchNormalization(),
+        layers.Dropout(.2),
+        
+        layers.Conv2D(32, 5, activation=act_conv),
+        layers.MaxPool2D(pool_size=2),
+        layers.BatchNormalization(),
+        layers.Dropout(.2),
+        
+        layers.Conv2D(64, 5,activation=act_conv),
+    ])
+    self.bi_lstm = layers.Bidirectional(
+                            layers.GRU(64, 
+                                        activation = act_rnn, 
+                                        return_sequences=True,
+                                        dropout=0.2))  
+ 
+    self.W = layers.Dense(1)
+    self.H = tf.keras.models.Sequential([
+      layers.Dense(5),])
+
+  def transformer_block(self, x):
+    pass
+
+  def call_latent(self, x):
+    x = tf.expand_dims(x, axis=-1)
+    x = self.conv(x)
+    x = tf.reshape(x, (x.shape[0], -1, 128))
+    x = self.bi_lstm(x)
+    x = self.attention(x)
+    return x
+
+  def attention(self,x):
+    alpha = tf.keras.activations.softmax(self.W(x), axis = 1)
+    alpha = tf.repeat(alpha, repeats=x.shape[-1], axis = -1)
+    x     = tf.math.reduce_sum(tf.math.multiply(x,alpha), axis = 1)  
+    return x
+  
+  def call(self, x):
+    x = self.call_latent(x)
+    x = self.H(x)    
+    return x
+
+  def save_weights(self, file, step):
+    super().save_weights(file+'/SER/'+str(step))
+
+  def load_weights(self, file,  step = None):
+    if step is None:
+      f = tf.train.latest_checkpoint(file+'/SER/')
+    else:
+      f = file+'/SER/'+str(step)
+    super().load_weights(f)
+
+class little_SER(SER):
+  def __init__(self):
+    super(little_SER, self).__init__()
+    act_rnn  = act.elu
+    act_conv = act.elu
+    act_dens = act.elu
+
+    self.conv = tf.keras.models.Sequential([
+        layers.Masking(mask_value=0.),
+
         layers.Conv2D(4, 5, activation=act_conv),
         layers.MaxPool2D(pool_size=2),
         layers.BatchNormalization(),
@@ -526,40 +595,6 @@ class SER(tf.keras.Model):
     self.W = layers.Dense(1)
     self.H = tf.keras.models.Sequential([
       layers.Dense(5),])
-
-  def transformer_block(self, x):
-    pass
-
-  def call_latent(self, x):
-    x = tf.expand_dims(x, axis=-1)
-    x = self.conv(x)
-    x = tf.reshape(x, (x.shape[0], -1, 64))
-    x = self.bi_lstm(x)
-    x = self.attention(x)
-    return x
-
-  def attention(self,x):
-    alpha = tf.keras.activations.softmax(self.W(x), axis = 1)
-    alpha = tf.repeat(alpha, repeats=x.shape[-1], axis = -1)
-    x     = tf.math.reduce_sum(tf.math.multiply(x,alpha), axis = 1)  
-    return x
-  
-  def call(self, x):
-    x = self.call_latent(x)
-    x = self.H(x)    
-    return x
-
-  def save_weights(self, file, step):
-    super().save_weights(file+'/SER/'+str(step))
-
-  def load_weights(self, file,  step = None):
-    if step is None:
-      f = tf.train.latest_checkpoint(file+'/SER/')
-    else:
-      f = file+'/SER/'+str(step)
-    super().load_weights(f)
-
-
 
 
 
