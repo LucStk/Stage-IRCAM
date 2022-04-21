@@ -1,7 +1,7 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
-from utilitaires.model import SER, Auto_Encodeur_SAU, Discriminator_SAU 
+from utilitaires.model import * 
 from utilitaires.utils import *
 import datetime
 import sys
@@ -49,7 +49,7 @@ except:
         except:
             raise Exception('Data not found')
 
-BATCH_SIZE_TRAIN = 56
+BATCH_SIZE_TRAIN = 256
 BATCH_SIZE_TEST  = 100
 SHUFFLE    = True
 LANGAGE    = "english"
