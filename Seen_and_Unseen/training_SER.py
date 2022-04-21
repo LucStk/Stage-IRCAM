@@ -1,4 +1,5 @@
 import os
+from sklearn.utils import shuffle
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
 from utilitaires.dataloader_ESD_tf import ESD_data_generator
@@ -85,13 +86,12 @@ with tf.device(comp_device) :
 
     if True:
         print("begin data_queue")
-        data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False)
+        data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle= True)
         data_queue.start(workers = 4, max_queue_size=20)
         train_dataloader = data_queue.get()
 
     log_dir        = "logs_SER/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     summary_writer = tf.summary.create_file_writer(log_dir)
-
     ################################
     #          TRAINING            #
     ################################
@@ -102,11 +102,11 @@ with tf.device(comp_device) :
         
         with tf.GradientTape() as tape: #Normalisation
             y_hat  = Model(x)
-            l = loss(y_,y_hat)
+            l      = loss(y_,y_hat)
         gradients = tape.gradient(l, Model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, Model.trainable_variables))  
         
-        if (cpt% 10 == 0) : 
+        if (cpt% 20 == 0) : 
             print(cpt)
             acc  = tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1)), dtype= tf.float64))
             with summary_writer.as_default():
