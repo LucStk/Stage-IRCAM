@@ -59,14 +59,14 @@ except:
         except:
             raise Exception('Data not found')
 
-BATCH_SIZE_TRAIN = 256
-BATCH_SIZE_TEST = 100
+BATCH_SIZE_TRAIN = 56
+BATCH_SIZE_TEST  = 100
 SHUFFLE    = True
 LANGAGE    = "english"
 
 EPOCH = 100
 LR    = 1e-5
-LR_AE = 1e-3
+LR_AE = 1e-4
 TEST_EPOCH = 1/2
 
 load_path     = ov.get('--load')
@@ -137,6 +137,7 @@ with tf.device(comp_device) :
         audio_log_dir        = "audio_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         audio_summary_writer = tf.summary.create_file_writer(audio_log_dir)
     
+    print("Create échantillion")
     mel_inv = Mel_inverter()
     l_mean_latent_ser = mean_SER_emotion(FILEPATH, ser, 100)
     echantillon       = emotion_echantillon(FILEPATH)
