@@ -1,5 +1,4 @@
 import os
-from sched import scheduler
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
 from utilitaires.dataloader_ESD_tf import ESD_data_generator
@@ -9,13 +8,6 @@ import datetime
 import sys
 import numpy as np
 import getopt
-
-from tensorflow.compat.v1 import ConfigProto
-from tensorflow.compat.v1 import InteractiveSession
-
-config = ConfigProto()
-config.gpu_options.allow_growth = True
-session = InteractiveSession(config=config)
     
 longoptions = ['lock=', 'load=']
 ov, ra = getopt.getopt(sys.argv[1:], "", longoptions)
@@ -115,7 +107,7 @@ with tf.device(comp_device) :
         gradients = tape.gradient(l, Model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, Model.trainable_variables))  
 
-        acc  = np.mean(y == tf.math.argmax(y_hat, axis = 1))
+        acc  = tf.reduce_mean(y == tf.math.argmax(y_hat, axis = 1))
         with summary_writer.as_default():
             tf.summary.scalar('train/loss',l, step=cpt)
             tf.summary.scalar('train/acc',acc, step=cpt)
@@ -133,7 +125,7 @@ with tf.device(comp_device) :
             y_hat = Model(x)
             l     = loss(y_,y_hat)
             
-            acc = np.mean(y == tf.math.argmax(y_hat, axis = 1))
+            acc = tf.reduce_mean(y == tf.math.argmax(y_hat, axis = 1))
             with summary_writer.as_default(): 
                 tf.summary.scalar('test/loss',l, step=cpt)
                 tf.summary.scalar('test/acc',acc, step=cpt)
