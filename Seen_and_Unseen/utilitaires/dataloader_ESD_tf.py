@@ -239,9 +239,9 @@ class ESD_data_generator_ALL_SAU(Sequence):
         sortie : x(n_batch*lenght, 80), latent(n_batch*lenght, 128)
         """
         indices = self.order[idx*self.batch_size:(idx+1)*self.batch_size]
-        x = tf.gather(self.x, indices=indices)
-        z = tf.gather(self.z, indices=indices)
-        y = tf.gather(self.y, indices=indices)
+        x = self.x[idx*self.batch_size:(idx+1)*self.batch_size]#tf.gather(self.x, indices=indices)
+        z = self.z[idx*self.batch_size:(idx+1)*self.batch_size]#tf.gather(self.z, indices=indices)
+        y = self.y[idx*self.batch_size:(idx+1)*self.batch_size]#tf.gather(self.y, indices=indices)
         return x,z,y
 
 class ESD_batch_data_generator(Sequence):
