@@ -85,7 +85,7 @@ with tf.device(comp_device) :
 
     if True:
         print("begin data_queue")
-        data_queue = tf.keras.utils.SequenceEnqueuer(train_dataloader, use_multiprocessing=False)
+        data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False)
         data_queue.start(workers = 4, max_queue_size=20)
         train_dataloader = data_queue.get()
 
@@ -97,7 +97,6 @@ with tf.device(comp_device) :
     ################################
     print("Training Beging")
     for cpt, (x,y) in enumerate(train_dataloader):
-        if (cpt% 10 == 0) : print(cpt)
         y_ = tf.one_hot(y,5)
         x  = normalisation(x)
         
@@ -106,12 +105,14 @@ with tf.device(comp_device) :
             l = loss(y_,y_hat)
         gradients = tape.gradient(l, Model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, Model.trainable_variables))  
-
-        acc  = tf.reduce_mean(tf.cast(y == tf.math.argmax(y_hat, axis = 1), dtype= tf.float64))
-        with summary_writer.as_default():
-            tf.summary.scalar('train/loss',l, step=cpt)
-            tf.summary.scalar('train/acc',acc, step=cpt)
-          
+        
+        if (cpt% 10 == 0) : 
+            print(cpt)
+            acc  = tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1)), dtype= tf.float64))
+            with summary_writer.as_default():
+                tf.summary.scalar('train/loss',l, step=cpt)
+                tf.summary.scalar('train/acc',acc, step=cpt)
+            
         ########################################
         #                TEST                  #
         ########################################

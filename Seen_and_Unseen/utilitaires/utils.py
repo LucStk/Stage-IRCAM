@@ -9,7 +9,7 @@ MIN = -14
 
 
 def normalisation(x):
-    mask = tf.cast(x!=0, tf.float64)
+    mask = tf.cast(tf.math.not_equal(x,0), tf.float64)
     x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
     x = tf.multiply(tf.cast(x, tf.float64), mask)
     #x = tf.cast(x, tf.float32)
@@ -17,7 +17,7 @@ def normalisation(x):
 
 def de_normalisation(x):
     x = tf.cast(x, tf.float64)
-    mask = tf.cast(x!=0, tf.float64)
+    mask = tf.cast(tf.math.not_equal(x,0), tf.float64)
     x = (x*STD_DATASET + MEAN_DATASET) #dé-Normalisation
     x = tf.multiply(x, mask)
     return x
