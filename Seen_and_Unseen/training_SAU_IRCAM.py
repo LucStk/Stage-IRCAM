@@ -175,7 +175,7 @@ with tf.device(comp_device) :
         grad_disc = tape_disc.gradient(l_disc, discriminator.trainable_variables)
         optimizer.apply_gradients(zip(grad_disc, discriminator.trainable_variables))
         
-        if (cpt % 1000 == 0): 
+        if (cpt % 10 == 0): 
             print(cpt)
             acc = tf.math.reduce_sum(tf.cast(d_true >= 0.5, dtype=tf.int32))+ tf.math.reduce_sum(tf.cast(d_false < 0.5, dtype=tf.int32))
             acc /= (2*len(d_false))
