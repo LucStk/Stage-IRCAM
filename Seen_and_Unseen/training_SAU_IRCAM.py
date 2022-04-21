@@ -1,10 +1,4 @@
 import os
-from pickletools import optimize
-from pexpect import ExceptionPexpect
-from sklearn.model_selection import train_test_split
-from sklearn.utils import shuffle
-from sympy import discriminant
-from yaml import load
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
 from utilitaires.model import SER, Auto_Encodeur_SAU, Discriminator_SAU 
@@ -14,6 +8,7 @@ import sys
 import getopt
 
 #valeurs obersvé empiriquement, utilisé pour la normalisation
+"""
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
 
@@ -21,7 +16,7 @@ config = ConfigProto()
 config.gpu_options.allow_growth = True
 session = InteractiveSession(config=config)
 
-
+"""
 longoptions = ['lock=', 'load=', 'load_SER=', 'no_metrics=']
 ov, ra = getopt.getopt(sys.argv[1:], "", longoptions)
 ov = dict(ov)
