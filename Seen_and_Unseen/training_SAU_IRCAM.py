@@ -59,7 +59,7 @@ except:
         except:
             raise Exception('Data not found')
 
-BATCH_SIZE_TRAIN = 56
+BATCH_SIZE_TRAIN = 256
 BATCH_SIZE_TEST  = 100
 SHUFFLE    = True
 LANGAGE    = "english"
@@ -152,12 +152,11 @@ with tf.device(comp_device) :
         x = normalisation(x)
         with tf.GradientTape() as tape_gen:#, tf.GradientTape() as tape_disc:
             # Apprentissage générateur
-            out   = auto_encodeur(x, z)
-            l_gen = MSE(x, out) #tf.reduce_mean(MSE(x,out))
-
+            out   = auto_encodeur.encodeur(x)#auto_encodeur(x, z)
+            l_gen = MSE(tf.ones_like(out), out) #tf.reduce_mean(MSE(x,out))
+        """
             #d_gen = discriminator(out)
             #l_gen = tf.reduce_mean(BCE(tf.ones_like(d_gen),d_gen))
-        """
             # Apprentissage générateur
             d_true  = discriminator(x)
             d_false = discriminator(out)

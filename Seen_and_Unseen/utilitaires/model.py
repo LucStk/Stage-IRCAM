@@ -415,7 +415,7 @@ class Decodeur_SAU(tf.keras.Model):
     """
     x = self.convT(x)
     x = tf.squeeze(x)
-    x = ks.activations.sigmoid(x)*(MAX_normalised-MIN_normalised)+MIN_normalised
+    x = tf.math.sigmoid(x)*(MAX_normalised-MIN_normalised)+MIN_normalised
     return x
 
 class Auto_Encodeur_SAU(Auto_Encodeur_rnn):
