@@ -187,6 +187,7 @@ with tf.device(comp_device) :
         #################################################################
         #                           TEST                                #
         #################################################################
+        continue
         if (cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
             print("Test Time")
             (x,z,y) = test_dataloader[cpt%len_test_dataloader]
