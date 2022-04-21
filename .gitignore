@@ -1,6 +1,9 @@
+__pycache__/
 Seen_and_Unseen/obsolet/
 Seen_and_Unseen/tests/
 Seen_and_Unseen/SAU.pdf
 Seen_and_Unseen/SER.pdf
 Seen_and_Unseen/audio_logs/
+Seen_and_Unseen/__pycache__/
+Seen_and_Unseen/.ipynb_checkpoints
 Seen_and_Unseen/utilitaires/__pycache__/model.cpython-38.pyc

@@ -60,7 +60,7 @@ except:
             raise Exception('Data not found')
 
 BATCH_SIZE_TRAIN = 256
-BATCH_SIZE_TEST = 30
+BATCH_SIZE_TEST = 100
 SHUFFLE    = True
 LANGAGE    = "english"
 
@@ -68,7 +68,6 @@ EPOCH = 100
 LR    = 1e-5
 LR_AE = 1e-3
 TEST_EPOCH = 1/2
-BATCH_SIZE = 256
 
 load_path     = ov.get('--load')
 load_SER_path = ov.get('--load_SER')
@@ -175,7 +174,7 @@ with tf.device(comp_device) :
         grad_disc = tape_disc.gradient(l_disc, discriminator.trainable_variables)
         optimizer.apply_gradients(zip(grad_disc, discriminator.trainable_variables))
         
-        if (cpt % 10 == 0): 
+        if (cpt % 100 == 0): 
             print(cpt)
             acc = tf.math.reduce_sum(tf.cast(d_true >= 0.5, dtype=tf.int32))+ tf.math.reduce_sum(tf.cast(d_false < 0.5, dtype=tf.int32))
             acc /= (2*len(d_false))
