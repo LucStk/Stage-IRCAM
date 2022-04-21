@@ -71,7 +71,7 @@ TEST_EPOCH = 1/2
 
 load_path     = ov.get('--load')
 load_SER_path = ov.get('--load_SER')
-no_metrics       = ov.get('--no_metrics') == "true"
+no_metrics    = ov.get('--no_metrics') == "true"
 
 with tf.device(comp_device) :
     tf.debugging.set_log_device_placement(True)
@@ -82,7 +82,7 @@ with tf.device(comp_device) :
     discriminator = Discriminator_SAU()
     ser = SER()
     BCE = tf.keras.losses.BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
-    MSE = tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.MEAN)
+    MSE = tf.keras.losses.MeanSquaredError()
     ################################################################
     #                         Loading Model                        #
     ################################################################
