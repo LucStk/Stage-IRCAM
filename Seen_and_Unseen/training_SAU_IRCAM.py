@@ -167,8 +167,8 @@ with tf.device(comp_device) :
         grad_disc = tape_disc.gradient(l_disc, discriminator.trainable_variables)
         optimizer.apply_gradients(zip(grad_disc, discriminator.trainable_variables))
         """     
-        grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.trainable_variables)
-        optimizer_AE.apply_gradients(zip(grad_gen, auto_encodeur.trainable_variables))
+        grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.encodeur.trainable_variables)
+        optimizer_AE.apply_gradients(zip(grad_gen, auto_encodeur.encodeur.trainable_variables))
 
         if (cpt % 10 == 0): 
             print(cpt)
