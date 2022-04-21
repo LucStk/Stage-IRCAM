@@ -23,7 +23,7 @@ config.gpu_options.allow_growth = True
 session = InteractiveSession(config=config)
 
 
-longoptions = ['lock=', 'load=', 'load_SER=']
+longoptions = ['lock=', 'load=', 'load_SER=', 'no_metrics=']
 ov, ra = getopt.getopt(sys.argv[1:], "", longoptions)
 ov = dict(ov)
 
@@ -78,6 +78,7 @@ BATCH_SIZE = 256
 
 load_path     = ov.get('--load')
 load_SER_path = ov.get('--load_SER')
+no_metrics       = ov.get('--no_metrics') == "true"
 
 with tf.device(comp_device) :
     tf.debugging.set_log_device_placement(True)
@@ -135,13 +136,15 @@ with tf.device(comp_device) :
     
     print("Data_loaders ready")
 
+    if not no_metrics:
     #Création des summary
-    log_dir        = "SAU_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    summary_writer = tf.summary.create_file_writer(log_dir)
+        log_dir        = "SAU_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        summary_writer = tf.summary.create_file_writer(log_dir)
+        
+        #Préparation enregistrement
+        audio_log_dir        = "audio_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        audio_summary_writer = tf.summary.create_file_writer(audio_log_dir)
     
-    #Préparation enregistrement
-    audio_log_dir        = "audio_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    audio_summary_writer = tf.summary.create_file_writer(audio_log_dir)
     mel_inv = Mel_inverter()
     l_mean_latent_ser = mean_SER_emotion(FILEPATH, ser, 100)
     echantillon       = emotion_echantillon(FILEPATH)
@@ -180,11 +183,12 @@ with tf.device(comp_device) :
         
         acc = (np.sum(d_true >= 0.5)+ np.sum(d_false < 0.5))/(2*len(d_false))
         mdc = MDC_1D(out, x)
-        with summary_writer.as_default(): 
-            tf.summary.scalar('train/loss_generateur',l_gen, step=cpt)
-            tf.summary.scalar('train/loss_discriminateur',l_disc, step=cpt)
-            tf.summary.scalar('train/acc',acc , step=cpt)
-            tf.summary.scalar('train/mdc',mdc , step=cpt)
+        if not no_metrics:
+            with summary_writer.as_default(): 
+                tf.summary.scalar('train/loss_generateur',l_gen, step=cpt)
+                tf.summary.scalar('train/loss_discriminateur',l_disc, step=cpt)
+                tf.summary.scalar('train/acc',acc , step=cpt)
+                tf.summary.scalar('train/mdc',mdc , step=cpt)
 
         #################################################################
         #                           TEST                                #
@@ -204,18 +208,21 @@ with tf.device(comp_device) :
 
             acc = (np.sum(d_true >= 0.5)+ np.sum(d_false < 0.5))/(2*len(d_false))
             mdc = MDC_1D(out, x)
-            with summary_writer.as_default(): 
-                tf.summary.scalar('test/loss_generateur',l_gen, step=cpt)
-                tf.summary.scalar('test/loss_discriminateur_true',l_true, step=cpt)
-                tf.summary.scalar('test/loss_discriminateur_false',l_false, step=cpt)
-                tf.summary.scalar('test/acc',acc , step=cpt)
-                tf.summary.scalar('test/mdc',mdc , step=cpt)
+            if not no_metrics:
+                with summary_writer.as_default(): 
+                    tf.summary.scalar('test/loss_generateur',l_gen, step=cpt)
+                    tf.summary.scalar('test/loss_discriminateur_true',l_true, step=cpt)
+                    tf.summary.scalar('test/loss_discriminateur_false',l_false, step=cpt)
+                    tf.summary.scalar('test/acc',acc , step=cpt)
+                    tf.summary.scalar('test/mdc',mdc , step=cpt)
 
         #################################################################
         #                Audio-logs et sauvegarde                       #
         #################################################################
 
         if (cpt+1) % (2*len_test_dataloader) == 0:
+            if no_metrics:
+                continue
             print("End batch")
             print("Creation audio sample")
             """
