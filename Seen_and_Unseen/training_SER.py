@@ -86,7 +86,7 @@ with tf.device(comp_device) :
     if True:
         print("begin data_queue")
         data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
-        data_queue.start()
+        data_queue.start(worker = 4)
         train_dataloader = data_queue.get()
 
     log_dir        = "logs_SER/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
