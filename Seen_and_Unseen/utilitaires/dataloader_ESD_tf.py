@@ -205,7 +205,7 @@ class ESD_data_generator_ALL_SAU(Sequence):
             print('|', end="", flush=True)
         print("latent created")
 
-        z  = tf.concatenate(ret, axis = 0)
+        z  = tf.concat(ret, axis = 0)
         y  = [list_emotions.index(re.findall("((?:\w|\.)+)", l)[-3]) for l in self.dataname]
         
         x_size = np.array([i.shape[1] for i in x])
