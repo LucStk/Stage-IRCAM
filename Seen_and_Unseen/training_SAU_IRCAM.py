@@ -114,7 +114,7 @@ with tf.device(comp_device) :
     if True:
         print("begin data_queue")
         data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
-        data_queue.start()
+        data_queue.start(4, 20)
         train_dataloader = data_queue.get()
 
     print("Data_loaders ready")
