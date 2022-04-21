@@ -107,7 +107,7 @@ with tf.device(comp_device) :
         gradients = tape.gradient(l, Model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, Model.trainable_variables))  
 
-        acc  = tf.reduce_mean(y == tf.math.argmax(y_hat, axis = 1))
+        acc  = tf.reduce_mean(tf.cast(y == tf.math.argmax(y_hat, axis = 1), dtype= tf.float64))
         with summary_writer.as_default():
             tf.summary.scalar('train/loss',l, step=cpt)
             tf.summary.scalar('train/acc',acc, step=cpt)
@@ -125,7 +125,7 @@ with tf.device(comp_device) :
             y_hat = Model(x)
             l     = loss(y_,y_hat)
             
-            acc = tf.reduce_mean(y == tf.math.argmax(y_hat, axis = 1))
+            acc = tf.reduce_mean(tf.cast(y == tf.math.argmax(y_hat, axis = 1), dtype= tf.float64))
             with summary_writer.as_default(): 
                 tf.summary.scalar('test/loss',l, step=cpt)
                 tf.summary.scalar('test/acc',acc, step=cpt)
