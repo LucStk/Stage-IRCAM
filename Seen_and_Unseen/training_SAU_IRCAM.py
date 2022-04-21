@@ -11,7 +11,6 @@ from utilitaires.model import SER, Auto_Encodeur_SAU, Discriminator_SAU
 from utilitaires.utils import *
 import datetime
 import sys
-import numpy as np
 import getopt
 
 #valeurs obersvé empiriquement, utilisé pour la normalisation
@@ -151,7 +150,7 @@ with tf.device(comp_device) :
 
     print("Every thing ready, beging training")
     for cpt, (x,z,y) in enumerate(train_dataloader):
-        if (cpt % 10 == 0): print(cpt)
+        
 
         #################################################################
         #                           TRAINING                            #
@@ -181,14 +180,17 @@ with tf.device(comp_device) :
         grad_disc = tape_disc.gradient(l_disc, discriminator.trainable_variables)
         optimizer.apply_gradients(zip(grad_disc, discriminator.trainable_variables))
         
-        acc = (np.sum(d_true >= 0.5)+ np.sum(d_false < 0.5))/(2*len(d_false))
-        mdc = MDC_1D(out, x)
-        if not no_metrics:
-            with summary_writer.as_default(): 
-                tf.summary.scalar('train/loss_generateur',l_gen, step=cpt)
-                tf.summary.scalar('train/loss_discriminateur',l_disc, step=cpt)
-                tf.summary.scalar('train/acc',acc , step=cpt)
-                tf.summary.scalar('train/mdc',mdc , step=cpt)
+        if (cpt % 10 == 0): 
+            print(cpt)
+            acc = tf.math.reduce_sum(tf.cast(d_true >= 0.5, dtype=tf.int32))+ tf.math.reduce_sum(tf.cast(d_false < 0.5, dtype=tf.int32))
+            acc /= (2*len(d_false))
+            mdc = MDC_1D(out, x)
+            if not no_metrics:
+                with summary_writer.as_default(): 
+                    tf.summary.scalar('train/loss_generateur',l_gen, step=cpt)
+                    tf.summary.scalar('train/loss_discriminateur',l_disc, step=cpt)
+                    tf.summary.scalar('train/acc',acc , step=cpt)
+                    tf.summary.scalar('train/mdc',mdc , step=cpt)
 
         #################################################################
         #                           TEST                                #
@@ -199,15 +201,16 @@ with tf.device(comp_device) :
             x = normalisation(x)
             out = auto_encodeur(x, z)
             d_gen = discriminator(out)
-            l_gen = tf.reduce_mean(BCE(np.ones(d_gen.shape),d_gen))
+            l_gen = tf.reduce_mean(BCE(tf.ones_like(d_gen.shape),d_gen))
 
             d_true  = discriminator(x)
             d_false = discriminator(tf.stop_gradient(out))
-            l_true  = tf.reduce_mean(BCE(np.ones(d_true.shape),d_true))
-            l_false = tf.reduce_mean(BCE(np.zeros(d_false.shape),d_false))
+            l_true  = tf.reduce_mean(BCE(tf.ones_like(d_true.shape),d_true))
+            l_false = tf.reduce_mean(BCE(tf.zeros_like(d_false.shape),d_false))
 
-            acc = (np.sum(d_true >= 0.5)+ np.sum(d_false < 0.5))/(2*len(d_false))
-            mdc = MDC_1D(out, x)
+            acc  = tf.math.reduce_sum(tf.cast(d_true >= 0.5, dtype=tf.int32))+ tf.math.reduce_sum(tf.cast(d_false < 0.5, dtype=tf.int32))
+            acc /= (2*len(d_false))
+            mdc  = MDC_1D(out, x)
             if not no_metrics:
                 with summary_writer.as_default(): 
                     tf.summary.scalar('test/loss_generateur',l_gen, step=cpt)
@@ -235,8 +238,8 @@ with tf.device(comp_device) :
                 rec_x   = mel_inv.convert(de_normalisation(x))
                 tf.summary.audio('Original',rec_x, 24000, step=cpt)
                 for i, emo in enumerate(l_emotion):
-                    tmp = np.expand_dims(l_mean_latent_ser[i], axis = 0)
-                    phi = np.repeat(tmp, x.shape[0], axis = 0)
+                    tmp = tf.expand_dims(l_mean_latent_ser[i], axis = 0)
+                    phi = tf.repeat(tmp, x.shape[0], axis = 0)
                     out  = auto_encodeur(x, phi)
                     rec_out = mel_inv.convert(de_normalisation(out))
                     tf.summary.audio('Reconstruct '+emo,rec_out, 24000,step=cpt)

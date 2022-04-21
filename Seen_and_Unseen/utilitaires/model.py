@@ -430,7 +430,7 @@ class Auto_Encodeur_SAU(Auto_Encodeur_rnn):
     x   : (b*lenght, 128)
     phi : (b*lenght, 128)
     """
-    phi = np.expand_dims(phi, axis=1) #(b*lenght, 1, 128)
+    phi    = tf.expand_dims(phi, axis=1) #(b*lenght, 1, 128)
     latent = self.encodeur(x)#(b*lenght, 1, 128)
     latent = tf.concat((phi,latent), axis = 2)
 

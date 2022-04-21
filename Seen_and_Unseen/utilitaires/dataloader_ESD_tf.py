@@ -205,7 +205,7 @@ class ESD_data_generator_ALL_SAU(Sequence):
             print('|', end="", flush=True)
         print("latent created")
 
-        z = np.concatenate(ret, axis = 0)
+        z  = tf.concatenate(ret, axis = 0)
         y  = [list_emotions.index(re.findall("((?:\w|\.)+)", l)[-3]) for l in self.dataname]
         
         x_size = np.array([i.shape[1] for i in x])
@@ -215,22 +215,22 @@ class ESD_data_generator_ALL_SAU(Sequence):
         x      = tf.concat(x,axis = 1) # format (80, None)
         self.x = tf.transpose(x) # format (None, 80)
 
-        self.order   = np.arange(len(self.x))
+        self.order   = tf.range(len(self.x))
         self.sh      = shuffle
         self.file_path  = file_path
         self.batch_size = batch_size
         if self.sh:
-            np.random.shuffle(self.order)
+            self.shuffle()
 
     def __len__(self):
         return math.ceil(len(self.order)/self.batch_size)
 
     def shuffle(self):
-        np.random.shuffle(self.order)
+        tf.random.shuffle(self.order)
 
     def on_epoch_end(self):
         if self.sh:
-            np.random.shuffle(self.order)
+            tf.random.shuffle(self.order)
 
     def __getitem__(self, idx):
         """

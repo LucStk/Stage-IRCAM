@@ -1,6 +1,5 @@
 import enum
 import tensorflow as tf
-import numpy as np
 import pandas as pd
 from utilitaires.dataloader_ESD_tf import *
 MEAN_DATASET = -6.0056405
@@ -62,7 +61,7 @@ def mean_SER_emotion(FILEPATH, SER, batch_size):
     gr_emotion = dataloader.dataset_emotion # (5,~) nom_fichier listé par émotion
     ret = []
     for g in gr_emotion:
-        np.random.shuffle(g)
+        tf.random.shuffle(g)
         batch = g[:batch_size]#list de batch_size nom de fichier d'émotion i
         x = [pd.read_pickle(f) for f in batch]
         x = auto_padding(x)
@@ -82,7 +81,7 @@ def emotion_echantillon(FILEPATH):
     gr_emotion = dataloader.dataset_emotion # (5,~) nom_fichier listé par émotion
     ret = []
     for g in gr_emotion:
-        np.random.shuffle(g)
+        tf.random.shuffle(g)
         x = pd.read_pickle(g[0])
         x = tf.transpose(x, perm = [1,0])
         x = normalisation(x)
@@ -122,7 +121,7 @@ class Mel_inverter():
         self.dd['mell'] = x.numpy().T
         log_mel_spectrogram = self.MelInv.scale_mel(self.dd, verbose=False)
         rec_audio = self.MelInv.synth_from_mel(log_mel_spectrogram)
-        return np.atleast_3d(rec_audio)
+        return tf.experimental.numpy.atleast_3d(rec_audio)
 
 def MDC(x_hat, x):
     x    = x[:,:x_hat.shape[1]]#Crop pour les pertes de reconstruction du decodeur
@@ -133,7 +132,7 @@ def MDC(x_hat, x):
     a = tf.math.pow(r,2)
     a = tf.math.sqrt(tf.math.reduce_sum(a, axis=2))
     a = tf.math.reduce_sum(a, axis = 1)/n
-    a *= (10/np.log(10))*np.sqrt(2)*STD_DATASET 
+    a *= (10/tf.math.log(10))*tf.math.sqrt(2)*STD_DATASET 
     return tf.math.reduce_mean(a)
 
 def MDC_1D(x_hat, x):
@@ -141,5 +140,5 @@ def MDC_1D(x_hat, x):
     a = tf.math.pow(sub,2)
     a = tf.math.sqrt(tf.math.reduce_sum(a, axis=1))
     a = tf.math.reduce_mean(a)
-    a *= (10/np.log(10))*np.sqrt(2)*STD_DATASET
+    a *= (10/tf.math.log(10))*tf.math.sqrt(2)*STD_DATASET
     return a
