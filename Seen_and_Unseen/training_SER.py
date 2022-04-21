@@ -97,7 +97,7 @@ with tf.device(comp_device) :
     ################################
     print("Training Beging")
     for cpt, (x,y) in enumerate(train_dataloader):
-        print(cpt)
+        if (cpt% 10 == 0) : print(cpt)
         y_ = tf.one_hot(y,5)
         x  = normalisation(x)
         
