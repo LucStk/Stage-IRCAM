@@ -82,7 +82,7 @@ with tf.device(comp_device) :
     discriminator = Discriminator_SAU()
     ser = SER()
     BCE = tf.keras.losses.BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
-    MSE = tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.NONE)
+    MSE = tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.MEAN)
     ################################################################
     #                         Loading Model                        #
     ################################################################
@@ -150,10 +150,10 @@ with tf.device(comp_device) :
         #################################################################
 
         x = normalisation(x)
-        with tf.GradientTape() as tape_gen, tf.GradientTape() as tape_disc:
+        with tf.GradientTape() as tape_gen:#, tf.GradientTape() as tape_disc:
             # Apprentissage générateur
             out   = auto_encodeur(x, z)
-            l_gen = tf.reduce_mean(MSE(x,out))
+            l_gen = MSE(x, out) #tf.reduce_mean(MSE(x,out))
 
             #d_gen = discriminator(out)
             #l_gen = tf.reduce_mean(BCE(tf.ones_like(d_gen),d_gen))
