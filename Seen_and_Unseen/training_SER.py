@@ -85,7 +85,7 @@ with tf.device(comp_device) :
 
     if True:
         print("begin data_queue")
-        data_queue = tf.keras.utils.SequenceEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
+        data_queue = tf.keras.utils.SequenceEnqueuer(train_dataloader, use_multiprocessing=False)
         data_queue.start(workers = 4, max_queue_size=20)
         train_dataloader = data_queue.get()
 
