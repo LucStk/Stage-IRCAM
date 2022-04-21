@@ -59,17 +59,14 @@ SHUFFLE    = True
 LANGAGE    = "english"
 USE_DATA_QUEUE = True
 LR = 1e-5
-TEST_EPOCH = 1/2
+TEST_EPOCH = 2
 load_path = ov.get('--load')
 
 with tf.device(comp_device) :
     Model     = SER()
     optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
     loss      = tf.keras.losses.BinaryCrossentropy(from_logits = True)
-    def scheduler(epoch, lr):
-        if epoch % 20000 == 0:
-            return 
-    
+
     if load_path is not None :
         try:
             Model.load_weights(os.getcwd()+load_path)

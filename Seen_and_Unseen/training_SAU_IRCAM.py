@@ -7,16 +7,6 @@ import datetime
 import sys
 import getopt
 
-#valeurs obersvé empiriquement, utilisé pour la normalisation
-"""
-from tensorflow.compat.v1 import ConfigProto
-from tensorflow.compat.v1 import InteractiveSession
-
-config = ConfigProto()
-config.gpu_options.allow_growth = True
-session = InteractiveSession(config=config)
-
-"""
 longoptions = ['lock=', 'load=', 'load_SER=', 'no_metrics=']
 ov, ra = getopt.getopt(sys.argv[1:], "", longoptions)
 ov = dict(ov)
@@ -59,7 +49,7 @@ except:
         except:
             raise Exception('Data not found')
 
-BATCH_SIZE_TRAIN = 256
+BATCH_SIZE_TRAIN = 56
 BATCH_SIZE_TEST  = 100
 SHUFFLE    = True
 LANGAGE    = "english"
@@ -128,114 +118,19 @@ with tf.device(comp_device) :
         train_dataloader = data_queue.get()
 
     print("Data_loaders ready")
-    if not no_metrics:
-    #Création des summary
-        log_dir        = "SAU_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        summary_writer = tf.summary.create_file_writer(log_dir)
-        
-        #Préparation enregistrement
-        audio_log_dir        = "audio_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        audio_summary_writer = tf.summary.create_file_writer(audio_log_dir)
-    
-    print("Create échantillion")
-    mel_inv = Mel_inverter()
-    l_mean_latent_ser = mean_SER_emotion(FILEPATH, ser, 100)
-    echantillon       = emotion_echantillon(FILEPATH)
 
     print("Every thing ready, beging training")
     for cpt, (x,z,y) in enumerate(train_dataloader):
-
         #################################################################
         #                           TRAINING                            #
         #################################################################
-
         x = normalisation(x)
         with tf.GradientTape() as tape_gen:#, tf.GradientTape() as tape_disc:
             # Apprentissage générateur
             out   = auto_encodeur.encodeur(x)#auto_encodeur(x, z)
             l_gen = MSE(tf.ones_like(out), out) #tf.reduce_mean(MSE(x,out))
-        """
-            #d_gen = discriminator(out)
-            #l_gen = tf.reduce_mean(BCE(tf.ones_like(d_gen),d_gen))
-            # Apprentissage générateur
-            d_true  = discriminator(x)
-            d_false = discriminator(out)
-            l_true  = BCE(tf.ones_like(d_true),d_true)
-            l_false = BCE(tf.zeros_like(d_false),d_false)
-            l_disc  = tf.reduce_mean(tf.concat((l_true,l_false),axis=0))
 
-        grad_disc = tape_disc.gradient(l_disc, discriminator.trainable_variables)
-        optimizer.apply_gradients(zip(grad_disc, discriminator.trainable_variables))
-        """     
         grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.encodeur.trainable_variables)
         optimizer_AE.apply_gradients(zip(grad_gen, auto_encodeur.encodeur.trainable_variables))
 
-        if (cpt % 10 == 0): 
-            print(cpt)
-            continue
-            acc = tf.math.reduce_sum(tf.cast(d_true >= 0.5, dtype=tf.int32))+ tf.math.reduce_sum(tf.cast(d_false < 0.5, dtype=tf.int32))
-            acc /= (2*len(d_false))
-            mdc = MDC_1D(out, x)
-            if not no_metrics:
-                with summary_writer.as_default(): 
-                    tf.summary.scalar('train/loss_generateur',l_gen, step=cpt)
-                    tf.summary.scalar('train/loss_discriminateur',l_disc, step=cpt)
-                    tf.summary.scalar('train/acc',acc , step=cpt)
-                    tf.summary.scalar('train/mdc',mdc , step=cpt)
-
-        #################################################################
-        #                           TEST                                #
-        #################################################################
-        continue
-        if (cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
-            print("Test Time")
-            (x,z,y) = test_dataloader[cpt%len_test_dataloader]
-            x = normalisation(x)
-            out = auto_encodeur(x, z)
-            d_gen = discriminator(out)
-            l_gen = tf.reduce_mean(BCE(tf.ones_like(d_gen.shape),d_gen))
-
-            d_true  = discriminator(x)
-            d_false = discriminator(tf.stop_gradient(out))
-            l_true  = tf.reduce_mean(BCE(tf.ones_like(d_true.shape),d_true))
-            l_false = tf.reduce_mean(BCE(tf.zeros_like(d_false.shape),d_false))
-
-            acc  = tf.math.reduce_sum(tf.cast(d_true >= 0.5, dtype=tf.int32))+ tf.math.reduce_sum(tf.cast(d_false < 0.5, dtype=tf.int32))
-            acc /= (2*len(d_false))
-            mdc  = MDC_1D(out, x)
-            if not no_metrics:
-                with summary_writer.as_default(): 
-                    tf.summary.scalar('test/loss_generateur',l_gen, step=cpt)
-                    tf.summary.scalar('test/loss_discriminateur_true',l_true, step=cpt)
-                    tf.summary.scalar('test/loss_discriminateur_false',l_false, step=cpt)
-                    tf.summary.scalar('test/acc',acc , step=cpt)
-                    tf.summary.scalar('test/mdc',mdc , step=cpt)
-
-        #################################################################
-        #                Audio-logs et sauvegarde                       #
-        #################################################################
-
-        if (cpt+1) % (2*len_test_dataloader) == 0:
-            if no_metrics:
-                continue
-            print("End batch")
-            print("Creation audio sample")
-            """
-            Pour un échantillon neutre, effectue une EVC avec toutes les
-            émotions.
-            """
-            l_emotion = ['Angry','Happy', 'Neutral', 'Sad', 'Surprise']
-            with audio_summary_writer.as_default(): 
-                x = echantillon[2] # On ne prend que le neutre
-                rec_x   = mel_inv.convert(de_normalisation(x))
-                tf.summary.audio('Original',rec_x, 24000, step=cpt)
-                for i, emo in enumerate(l_emotion):
-                    tmp = tf.expand_dims(l_mean_latent_ser[i], axis = 0)
-                    phi = tf.repeat(tmp, x.shape[0], axis = 0)
-                    out  = auto_encodeur(x, phi)
-                    rec_out = mel_inv.convert(de_normalisation(out))
-                    tf.summary.audio('Reconstruct '+emo,rec_out, 24000,step=cpt)
-
-            print("save")
-            auto_encodeur.save_weights(log_dir, format(cpt//len_train_dataloader))
-            discriminator.save_weights(log_dir, format(cpt//len_train_dataloader))
+        if (cpt % 10 == 0): print(cpt)

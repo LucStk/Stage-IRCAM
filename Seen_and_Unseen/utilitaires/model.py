@@ -383,7 +383,6 @@ class Encodeur_SAU(tf.keras.Model):
   def call(self, x):
     x = tf.expand_dims(x, axis = -1)
     x = self.conv(x)
-    #x = self.latent(x)
     return x
 
 class Decodeur_SAU(tf.keras.Model):
