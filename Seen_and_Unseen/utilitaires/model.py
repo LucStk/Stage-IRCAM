@@ -342,19 +342,19 @@ class Encodeur_SAU(tf.keras.Model):
     super(Encodeur_SAU, self).__init__()
     act_conv = act.relu
     self.conv = tf.keras.models.Sequential([
-        #layers.Masking(mask_value=0.),
+        layers.Masking(mask_value=0.),
         
         layers.Conv1D(8, 4, activation=act_conv),
         layers.MaxPool1D(pool_size=2),
-        #layers.BatchNormalization(),
+        layers.BatchNormalization(),
         
         layers.Conv1D(16, 4, activation=act_conv),
         layers.MaxPool1D(pool_size=2),
-        #layers.BatchNormalization(),
+        layers.BatchNormalization(),
         
         layers.Conv1D(32, 4, activation=act_conv),
         layers.MaxPool1D(pool_size=3),
-        #layers.BatchNormalization(),
+        layers.BatchNormalization(),
 
         layers.Conv1D(64, 4, activation=act_conv),
     ])
@@ -384,7 +384,7 @@ class Encodeur_SAU(tf.keras.Model):
     x = tf.expand_dims(x, axis = -1)
     x = self.conv(x)
     return x
-
+    
 
 class Decodeur_SAU(tf.keras.Model):
   def __init__(self):

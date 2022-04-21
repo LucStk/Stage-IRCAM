@@ -127,8 +127,8 @@ with tf.device(comp_device) :
         x = normalisation(x)
         with tf.GradientTape() as tape_gen:#, tf.GradientTape() as tape_disc:
             # Apprentissage générateur
-            out   = auto_encodeur.encodeur(x)#auto_encodeur(x, z)
-            l_gen = MSE(tf.ones_like(out), out) #tf.reduce_mean(MSE(x,out))
+            out   = auto_encodeur(x, z)
+            l_gen = MSE(x, out) #tf.reduce_mean(MSE(x,out))
 
         grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.encodeur.trainable_variables)
         optimizer_AE.apply_gradients(zip(grad_gen, auto_encodeur.encodeur.trainable_variables))
