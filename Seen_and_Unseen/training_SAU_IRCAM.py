@@ -144,26 +144,20 @@ with tf.device(comp_device) :
 
     print("Every thing ready, beging training")
     for cpt, (x,z,y) in enumerate(train_dataloader):
-        
 
         #################################################################
         #                           TRAINING                            #
         #################################################################
 
         x = normalisation(x)
-        with tf.GradientTape() as tape_gen:
+        with tf.GradientTape() as tape_gen, tf.GradientTape() as tape_disc:
             # Apprentissage générateur
             out   = auto_encodeur(x, z)
             l_gen = tf.reduce_mean(MSE(x,out))
 
             #d_gen = discriminator(out)
             #l_gen = tf.reduce_mean(BCE(tf.ones_like(d_gen),d_gen))
-
-        grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.trainable_variables)
-        optimizer_AE.apply_gradients(zip(grad_gen, auto_encodeur.trainable_variables))
-        
-
-        with tf.GradientTape() as tape_disc:
+        """
             # Apprentissage générateur
             d_true  = discriminator(x)
             d_false = discriminator(out)
@@ -173,8 +167,11 @@ with tf.device(comp_device) :
 
         grad_disc = tape_disc.gradient(l_disc, discriminator.trainable_variables)
         optimizer.apply_gradients(zip(grad_disc, discriminator.trainable_variables))
-        
-        if (cpt % 100 == 0): 
+        """     
+        grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.trainable_variables)
+        optimizer_AE.apply_gradients(zip(grad_gen, auto_encodeur.trainable_variables))
+
+        if (cpt % 10 == 0): 
             print(cpt)
             acc = tf.math.reduce_sum(tf.cast(d_true >= 0.5, dtype=tf.int32))+ tf.math.reduce_sum(tf.cast(d_false < 0.5, dtype=tf.int32))
             acc /= (2*len(d_false))
