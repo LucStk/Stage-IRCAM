@@ -142,5 +142,5 @@ def MDC_1D(x_hat, x):
     a = tf.math.sqrt(tf.math.reduce_sum(a, axis=1))
     a = tf.math.reduce_mean(a)
     tmp = (10/tf.math.log(10.))*tf.math.sqrt(2.)*STD_DATASET
-    a = tf.math.multiply(a, tmp)
+    a = tf.math.multiply(tf.cast(a, dtype=tf.float64), tf.cast(tmp,dtype=tf.float64))
     return a
