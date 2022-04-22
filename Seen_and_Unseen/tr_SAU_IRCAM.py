@@ -120,7 +120,7 @@ with tf.device(comp_device) :
     print("Data_loaders ready")
 
     @tf.function
-    def train(x):
+    def train(input):
         x = input[:,:80]
         z = input[:,80:]
         x = normalisation(x)
