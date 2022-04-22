@@ -269,7 +269,7 @@ class SAU_GAN(tf.keras.Model):
 
   def call(self, input):
     print(input)
-    print(len(input.shape))
+    print(input.shape)
     (x, phi, y) = input
     x = normalisation(x)
 
