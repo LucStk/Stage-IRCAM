@@ -275,6 +275,6 @@ class SAU_GAN(tf.keras.Model):
       out   = self.ae(x, phi)
       l_gen = self.loss(x, out)
     
-    grad_gen  = tape_gen.gradient(l_gen, self.ae.trainable_variables)
-    self.ae_optim.apply_gradients(zip(grad_gen, self.ae.trainable_variables))
+    grad_gen  = tape_gen.gradient(l_gen, [*self.ae.decodeur.trainable_variables,*self.ae.encodeur.trainable_variables])
+    self.ae_optim.apply_gradients(zip(grad_gen, [*self.ae.decodeur.trainable_variables,*self.ae.encodeur.trainable_variables]))
     return {"l_gen":l_gen}
