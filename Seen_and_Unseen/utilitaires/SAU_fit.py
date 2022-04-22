@@ -268,6 +268,7 @@ class SAU_GAN(tf.keras.Model):
     self.loss    = loss
 
   def call(self, input):
+    print(len(input))
     (x, phi, y) = input
     x = normalisation(x)
 
