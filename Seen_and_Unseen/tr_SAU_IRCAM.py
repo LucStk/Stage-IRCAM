@@ -120,36 +120,7 @@ with tf.device(comp_device) :
         data_queue.start(4, 20)
         train_dataloader = data_queue.get()
 
-    print("Data_loaders ready")
-
     print("Every thing ready, beging training")
-
-    """
-    @tf.function
-    def train(input):
-        x = input[:,:80]
-        z = input[:,80:]
-        x = normalisation(x)
-        with tf.GradientTape() as tape_gen:
-            out   = auto_encodeur(x, z)
-            l_gen = MSE(x, out)
-            scaled_loss = ae_optim.get_scaled_loss(l_gen)
-
-        tr_var = auto_encodeur.trainable_variables
-        
-        scaled_grad = tape_gen.gradient(scaled_loss, tr_var)
-        grad_gen  = ae_optim.get_unscaled_gradients(scaled_grad)
-        
-        #grad_gen = tape_gen.gradient(l_gen, tr_var)
-        ae_optim.apply_gradients(zip(grad_gen, tr_var))
-    
-
-    for cpt, x in enumerate(train_dataloader):
-        #################################################################
-        #                           TRAINING                            #
-        #################################################################
-        train(x)
-    """
 
     @tf.function
     def train(input):
@@ -165,6 +136,39 @@ with tf.device(comp_device) :
         grad_gen = tape_gen.gradient(l_gen, tr_var)
         grad_gen = ae_optim.get_unscaled_gradients(grad_gen)
         ae_optim.apply_gradients(zip(grad_gen, tr_var))
+
+        """
+        acc = (np.sum(d_true >= 0.5)+ np.sum(d_false < 0.5))/(2*len(d_false))
+        mdc = MDC_1D(out, x)
+        with summary_writer.as_default(): 
+            tf.summary.scalar('train/loss_generateur',l_gen, step=cpt)
+            tf.summary.scalar('train/loss_discriminateur',l_disc, step=cpt)
+            tf.summary.scalar('train/acc',acc , step=cpt)
+            tf.summary.scalar('train/mdc',mdc , step=cpt)
+        """
+
+    def test():
+        print("Test Time")
+        (x,z,y) = test_dataloader[cpt%len_test_dataloader]
+        x = normalisation(x)
+        out = auto_encodeur(x, z)
+        d_gen = discriminator(out)
+        l_gen = tf.reduce_mean(BCE(np.ones(d_gen.shape),d_gen))
+
+        d_true  = discriminator(x)
+        d_false = discriminator(tf.stop_gradient(out))
+        l_true  = tf.reduce_mean(BCE(np.ones(d_true.shape),d_true))
+        l_false = tf.reduce_mean(BCE(np.zeros(d_false.shape),d_false))
+
+        acc = (np.sum(d_true >= 0.5)+ np.sum(d_false < 0.5))/(2*len(d_false))
+        mdc = MDC_1D(out, x)
+        with summary_writer.as_default(): 
+            tf.summary.scalar('test/loss_generateur',l_gen, step=cpt)
+            tf.summary.scalar('test/loss_discriminateur_true',l_true, step=cpt)
+            tf.summary.scalar('test/loss_discriminateur_false',l_false, step=cpt)
+            tf.summary.scalar('test/acc',acc , step=cpt)
+            tf.summary.scalar('test/mdc',mdc , step=cpt)
+    
 
     import contextlib
     @contextlib.contextmanager
