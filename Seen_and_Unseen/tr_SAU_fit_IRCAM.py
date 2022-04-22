@@ -115,7 +115,7 @@ with tf.device(comp_device) :
     print("Every thing ready, beging training")
     disc_optim = tf.keras.optimizers.Adam(learning_rate = LR)
     ae_optim   = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
-    BCE = tf.keras.losses.BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
+    BCE = tf.keras.losses.BinaryCrossentropy()
     MSE = tf.keras.losses.MeanSquaredError()
 
     SAU.compile(ae_optim,disc_optim,MSE)

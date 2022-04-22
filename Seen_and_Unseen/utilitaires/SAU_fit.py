@@ -259,6 +259,8 @@ class SAU_GAN(tf.keras.Model):
   def __init__(self):
     super(SAU_GAN, self).__init__()
     self.ae = Auto_Encodeur_SAU()
+    self.encodeur = Encodeur_SAU()
+    self.decodeur = Decodeur_SAU()
 
   def compile(self, ae_optim, disc_optim, loss):
     super(SAU_GAN, self).compile()
@@ -272,11 +274,14 @@ class SAU_GAN(tf.keras.Model):
     x = normalisation(x)
 
     with tf.GradientTape() as tape_gen:
-      print("xshape",x.shape)
-      out   = self.ae(x, phi)
-      print("outshape",out.shape)
-      l_gen = self.loss(x, out)
+      phi    = tf.expand_dims(phi, axis=1) #(b*lenght, 1, 128)
+      latent = self.encodeur(x)#(b*lenght, 1, 128)
+      latent = tf.concat((phi,latent), axis = 2)
+      out    = self.decodeur(latent)
+      l_gen  = self.loss(x, out)
     
-    grad_gen  = tape_gen.gradient(l_gen, self.ae.trainable_variables)
-    self.ae_optim.apply_gradients(zip(grad_gen, self.ae.trainable_variables))
+    tr_variables = [*self.decodeur.trainable_variables,*self.encodeur.trainable_variables]
+
+    grad_gen = tape_gen.gradient(l_gen, tr_variables)
+    self.ae_optim.apply_gradients(zip(grad_gen, tr_variables))
     return {"l_gen":l_gen}
