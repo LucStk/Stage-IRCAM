@@ -140,6 +140,6 @@ with tf.device(comp_device) :
 
             grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.encodeur.trainable_variables)
             optimizer_AE.apply_gradients(zip(grad_gen, auto_encodeur.encodeur.trainable_variables))
-
+            tf.print(cpt)
 
     main()
