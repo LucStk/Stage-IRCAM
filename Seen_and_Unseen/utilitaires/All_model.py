@@ -425,7 +425,6 @@ class Auto_Encodeur_SAU(Auto_Encodeur_rnn):
     self.encodeur = Encodeur_SAU()
     self.decodeur = Decodeur_SAU()
 
-  @tf.function
   def call(self,x, phi):
     """
     x   : (b*lenght, 128) non normalisé
