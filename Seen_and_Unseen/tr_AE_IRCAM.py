@@ -197,7 +197,7 @@ with tf.device(comp_device) :
 
         for cpt, x in enumerate(train_dataloader):
             metric_train = train(x)
-            
+
             if ((cpt +1) % 100) == 0:
                 write(metric_train, "train")
 
@@ -207,7 +207,7 @@ with tf.device(comp_device) :
                 metric_test = test(input)
                 write(metric_test, "test")
                 
-            if (cpt+1) % (2*len_test_dataloader) == 0:
+            if (cpt+1) % (2*len_train_dataloader) == 0:
                 print("rec audio", cpt)
                 rec_audios = create_audio()
                 with audio_summary_writer.as_default():
