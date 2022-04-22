@@ -272,7 +272,9 @@ class SAU_GAN(tf.keras.Model):
     x = normalisation(x)
 
     with tf.GradientTape() as tape_gen:
+      print("xshape",x.shape)
       out   = self.ae(x, phi)
+      print("outshape",out.shape)
       l_gen = self.loss(x, out)
     
     grad_gen  = tape_gen.gradient(l_gen, self.ae.trainable_weights)
