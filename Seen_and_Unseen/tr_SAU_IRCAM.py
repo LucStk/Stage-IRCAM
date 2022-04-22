@@ -141,7 +141,6 @@ with tf.device(comp_device) :
         """
         grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.trainable_variables)
         ae_optim.apply_gradients(zip(grad_gen, auto_encodeur.trainable_variables))
-        return train
     
 
     for cpt, x in enumerate(train_dataloader):
