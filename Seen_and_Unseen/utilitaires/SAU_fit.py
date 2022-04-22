@@ -268,6 +268,9 @@ class SAU_GAN(tf.keras.Model):
     self.disc_optim = disc_optim
     self.loss       = loss
 
+  def call(self):
+    pass
+
   def train_step(self, input):
     x   = input[:,:80]
     phi = input[:,80:]
