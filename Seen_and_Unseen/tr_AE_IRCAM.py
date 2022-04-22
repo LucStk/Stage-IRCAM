@@ -160,8 +160,6 @@ with tf.device(comp_device) :
         l_gen = MSE(x, out)
         return {"loss_generateur": l_gen}
 
-    
-    @tf.function
     def create_audio():
         l_emotion = ['Angry','Happy', 'Neutral', 'Sad', 'Surprise']
         with audio_summary_writer.as_default(): 
