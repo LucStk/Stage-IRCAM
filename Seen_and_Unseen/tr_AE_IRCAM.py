@@ -134,7 +134,7 @@ with tf.device(comp_device) :
     print("Every thing ready, beging training")
 
     @tf.function
-    def train(cpt, input):
+    def train(input):
         x = input[:,:80]
         z = input[:,80:]
         x = normalisation(x)
@@ -148,9 +148,12 @@ with tf.device(comp_device) :
         grad_gen = ae_optim.get_unscaled_gradients(grad_gen)
         ae_optim.apply_gradients(zip(grad_gen, tr_var))
 
+
+
+    """
         with summary_writer.as_default(): 
             tf.summary.scalar('train/loss_generateur',l_gen, step=cpt)
-
+            
     @tf.function
     def test(cpt):
         print("Test Time")
@@ -183,7 +186,7 @@ with tf.device(comp_device) :
     ###################################################################
     #                            Training                             #
     ###################################################################
-    """
+    
     import contextlib
     @contextlib.contextmanager
     def options(options):
@@ -197,7 +200,7 @@ with tf.device(comp_device) :
     with options({'constant_folding': True}):
     """
     for cpt, x in enumerate(train_dataloader):
-        train(cpt, x)
+        train(x)
 
         """
         if (cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
