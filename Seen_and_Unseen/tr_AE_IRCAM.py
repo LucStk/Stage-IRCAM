@@ -134,7 +134,7 @@ with tf.device(comp_device) :
     print("Every thing ready, beging training")
 
     @tf.function
-    def train(input):
+    def train(input,cpt):
         x = input[:,:80]
         z = input[:,80:]
         x = normalisation(x)
@@ -198,7 +198,7 @@ with tf.device(comp_device) :
     with options({'constant_folding': True}):
     """
     for cpt, x in enumerate(train_dataloader):
-        train(x)
+        train(x, cpt)
 
         """
         if (cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
