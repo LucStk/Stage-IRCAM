@@ -147,13 +147,11 @@ with tf.device(comp_device) :
         grad_gen = tape_gen.gradient(l_gen, tr_var)
         grad_gen = ae_optim.get_unscaled_gradients(grad_gen)
         ae_optim.apply_gradients(zip(grad_gen, tr_var))
-
-
-
-    """
         with summary_writer.as_default(): 
             tf.summary.scalar('train/loss_generateur',l_gen, step=cpt)
-            
+
+        
+    """
     @tf.function
     def test(cpt):
         print("Test Time")
