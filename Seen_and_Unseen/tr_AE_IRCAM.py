@@ -134,7 +134,7 @@ with tf.device(comp_device) :
     print("Every thing ready, beging training")
 
     @tf.function
-    def train(input,cpt):
+    def train(input):
         x = input[:,:80]
         z = input[:,80:]
         x = normalisation(x)
@@ -147,8 +147,7 @@ with tf.device(comp_device) :
         grad_gen = tape_gen.gradient(l_gen, tr_var)
         grad_gen = ae_optim.get_unscaled_gradients(grad_gen)
         ae_optim.apply_gradients(zip(grad_gen, tr_var))
-        with summary_writer.as_default(): 
-            tf.summary.scalar('train/loss_generateur',l_gen, step=cpt)
+        return {"loss_generateur": l_gen}
 
         
     """
@@ -198,7 +197,11 @@ with tf.device(comp_device) :
     with options({'constant_folding': True}):
     """
     for cpt, x in enumerate(train_dataloader):
-        train(x, cpt)
+        metric_train = train(x)
+
+        with summary_writer.as_default():
+            for (k, v) in metric_train.items():
+                tf.summary.scalar('train/'+k,v, step=cpt)
 
         """
         if (cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
