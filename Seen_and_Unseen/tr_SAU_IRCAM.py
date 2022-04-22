@@ -70,7 +70,7 @@ with tf.device(comp_device) :
     optimizer_AE = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
     auto_encodeur = Auto_Encodeur_SAU()
     discriminator = Discriminator_SAU()
-    auto_encodeur.compile()
+    #auto_encodeur.compile()
 
     ser = SER()
     BCE = tf.keras.losses.BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
@@ -122,9 +122,14 @@ with tf.device(comp_device) :
     print("Data_loaders ready")
 
     print("Every thing ready, beging training")
+
+    
     @tf.function
     def main():
-        def train(input):
+        for cpt, input in enumerate(train_dataloader):
+            #################################################################
+            #                           TRAINING                            #
+            #################################################################
             x = input[:,:80]
             z = input[:,80:]
             x = normalisation(x)
@@ -136,12 +141,5 @@ with tf.device(comp_device) :
             grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.encodeur.trainable_variables)
             optimizer_AE.apply_gradients(zip(grad_gen, auto_encodeur.encodeur.trainable_variables))
 
-
-        for cpt, x in enumerate(train_dataloader):
-            #################################################################
-            #                           TRAINING                            #
-            #################################################################
-            train(x)
-            print(cpt)
 
     main()
