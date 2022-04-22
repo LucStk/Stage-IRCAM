@@ -56,7 +56,7 @@ LANGAGE    = "english"
 
 EPOCH = 100
 LR_AE = 1e-4
-TEST_EPOCH = 1/2
+TEST_EPOCH = 1/4
 
 load_path     = ov.get('--load')
 load_SER_path = ov.get('--load_SER')
@@ -160,26 +160,27 @@ with tf.device(comp_device) :
         l_gen = MSE(x, out)
         return {"loss_generateur": l_gen}
 
-    """
+    
     @tf.function
-    def create_audio(cpt):
+    def create_audio():
         l_emotion = ['Angry','Happy', 'Neutral', 'Sad', 'Surprise']
         with audio_summary_writer.as_default(): 
             x = echantillon[2] # On ne prend que le neutre
             rec_x   = mel_inv.convert(de_normalisation(x))
-            tf.summary.audio('Original',rec_x, 24000, step=cpt)
+            ret = {"Original": rec_x}
             for i, emo in enumerate(l_emotion):
                 tmp = np.expand_dims(l_mean_latent_ser[i], axis = 0)
                 phi = np.repeat(tmp, x.shape[0], axis = 0)
                 out  = auto_encodeur(x, phi)
                 rec_out = mel_inv.convert(de_normalisation(out))
-                tf.summary.audio('Reconstruct '+emo,rec_out, 24000,step=cpt)
+                ret['Reconstruct '+emo] = rec_out
 
+        return ret
 
     ###################################################################
     #                            Training                             #
     ###################################################################
-    
+    """
     import contextlib
     @contextlib.contextmanager
     def options(options):
@@ -201,18 +202,18 @@ with tf.device(comp_device) :
 
     for cpt, x in enumerate(train_dataloader):
         metric_train = train(x)
-        
-        if (cpt +1) % 10 == 0:
+
+        if ((cpt +1) % 100) == 0:
             write(metric_train, "train")
 
-        if True :#(cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
+        if (cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
             print("Test Time")
             input = test_dataloader[cpt%len_test_dataloader]
             metric_test = test(input)
             write(metric_test, "test")
             
-
-        """
-        if (cpt+1) % (2*len_test_dataloader) == 0:
-            create_audio(cpt)
-        """
+        if True:#(cpt+1) % (2*len_test_dataloader) == 0:
+            rec_audios = create_audio()
+            with audio_summary_writer.as_default():
+                for (k, v) in rec_audios.items():
+                    tf.summary.audio(k,v, 24000, step=cpt) 
