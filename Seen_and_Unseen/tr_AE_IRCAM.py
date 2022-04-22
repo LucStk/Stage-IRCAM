@@ -150,21 +150,17 @@ with tf.device(comp_device) :
         return {"loss_generateur": l_gen}
 
         
-    """
+    
     @tf.function
-    def test(cpt):
-        print("Test Time")
-        input = test_dataloader[cpt%len_test_dataloader]
+    def test(input):
         x = input[:,:80]
         z = input[:,80:]
-
         x = normalisation(x)
         out   = auto_encodeur(x, z)
         l_gen = MSE(x, out)
+        return {"loss_generateur": l_gen}
 
-        with summary_writer.as_default(): 
-            tf.summary.scalar('test/loss_generateur',l_gen, step=cpt)
-    
+    """
     @tf.function
     def create_audio(cpt):
         l_emotion = ['Angry','Happy', 'Neutral', 'Sad', 'Surprise']
@@ -196,18 +192,27 @@ with tf.device(comp_device) :
 
     with options({'constant_folding': True}):
     """
+
+    def write(metric, type = 'train'):
+        with summary_writer.as_default():
+            for (k, v) in metric.items():
+                tf.summary.scalar(type+'/'+k,v, step=cpt)
+
+
     for cpt, x in enumerate(train_dataloader):
         metric_train = train(x)
+        
+        if (cpt +1) % 10 == 0:
+            write(metric_train, "train")
 
-        with summary_writer.as_default():
-            for (k, v) in metric_train.items():
-                tf.summary.scalar('train/'+k,v, step=cpt)
+        if True :#(cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
+            print("Test Time")
+            input = test_dataloader[cpt%len_test_dataloader]
+            metric_test = test(input)
+            write(metric_test, "test")
+            
 
         """
-        if (cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
-            print("test ",cpt)
-            test(cpt)
-        
         if (cpt+1) % (2*len_test_dataloader) == 0:
             create_audio(cpt)
         """
