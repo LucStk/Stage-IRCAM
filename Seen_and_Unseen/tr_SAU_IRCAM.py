@@ -66,8 +66,10 @@ no_metrics    = ov.get('--no_metrics') == "true"
 with tf.device(comp_device) :
     tf.debugging.set_log_device_placement(True)
     #optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
-    optimizer    = tf.keras.optimizers.Adam(learning_rate = LR)
-    optimizer_AE = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
+    optim_disc = tf.keras.optimizers.Adam(learning_rate = LR)
+    ae_optim   = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
+    #ae_optim = tf.mixed_precision.LossScaleOptimizer(ae_optim)
+    
     auto_encodeur = Auto_Encodeur_SAU()
     discriminator = Discriminator_SAU()
     #auto_encodeur.compile()
@@ -123,13 +125,38 @@ with tf.device(comp_device) :
 
     print("Every thing ready, beging training")
 
-    
     @tf.function
-    def main():
-        for cpt, input in enumerate(train_dataloader):
-            #################################################################
-            #                           TRAINING                            #
-            #################################################################
+    def train(input):
+        x = input[:,:80]
+        z = input[:,80:]
+        x = normalisation(x)
+        with tf.GradientTape() as tape_gen:
+            out   = auto_encodeur(x, z)
+            l_gen = MSE(x, out)
+
+        """
+            scaled_loss = ae_optim.get_scaled_loss(loss)
+
+        scaled_gradients = tape_gen.gradient(scaled_loss, auto_encodeur..trainable_variables)
+        """
+        grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.trainable_variables)
+        ae_optim.apply_gradients(zip(grad_gen, auto_encodeur.trainable_variables))
+        return train
+    
+
+    for cpt, x in enumerate(train_dataloader):
+        #################################################################
+        #                           TRAINING                            #
+        #################################################################
+        train(x)
+
+
+
+
+    raise
+    def get():
+        @tf.function
+        def train(input):
             x = input[:,:80]
             z = input[:,80:]
             x = normalisation(x)
@@ -139,7 +166,26 @@ with tf.device(comp_device) :
                 l_gen = MSE(x, out) #tf.reduce_mean(MSE(x,out))
 
             grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.encodeur.trainable_variables)
-            optimizer_AE.apply_gradients(zip(grad_gen, auto_encodeur.encodeur.trainable_variables))
-            tf.print(cpt)
+            ae_optim.apply_gradients(zip(grad_gen, auto_encodeur.encodeur.trainable_variables))
+        return train
+    import traceback
+    import contextlib
 
-    main()
+    @contextlib.contextmanager
+    def options(options):
+        old_opts = tf.config.optimizer.get_experimental_options()
+        tf.config.optimizer.set_experimental_options(options)
+        try:
+            yield
+        finally:
+            tf.config.optimizer.set_experimental_options(old_opts)
+
+
+    with options({'constant_folding': False}):
+        train = get()
+        for cpt, x in enumerate(train_dataloader):
+            #################################################################
+            #                           TRAINING                            #
+            #################################################################
+            train(x)
+            print(cpt)
