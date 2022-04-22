@@ -113,7 +113,7 @@ with tf.device(comp_device) :
     len_test_dataloader  = len(test_dataloader)
 
     #Utilisation data_queue
-    if False:
+    if True:
         print("begin data_queue")
         data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
         data_queue.start(4, 20)
@@ -121,27 +121,27 @@ with tf.device(comp_device) :
 
     print("Data_loaders ready")
 
-    @tf.function
-    def train(input):
-        x = input[:,:80]
-        z = input[:,80:]
-        x = normalisation(x)
-        with tf.GradientTape() as tape_gen:#, tf.GradientTape() as tape_disc:
-            # Apprentissage générateur
-            out   = auto_encodeur(x, z)
-            l_gen = MSE(x, out) #tf.reduce_mean(MSE(x,out))
-
-        grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.encodeur.trainable_variables)
-        optimizer_AE.apply_gradients(zip(grad_gen, auto_encodeur.encodeur.trainable_variables))
-
-
     print("Every thing ready, beging training")
     @tf.function
     def main():
+        def train(input):
+            x = input[:,:80]
+            z = input[:,80:]
+            x = normalisation(x)
+            with tf.GradientTape() as tape_gen:#, tf.GradientTape() as tape_disc:
+                # Apprentissage générateur
+                out   = auto_encodeur(x, z)
+                l_gen = MSE(x, out) #tf.reduce_mean(MSE(x,out))
+
+            grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.encodeur.trainable_variables)
+            optimizer_AE.apply_gradients(zip(grad_gen, auto_encodeur.encodeur.trainable_variables))
+
+
         for cpt, x in enumerate(train_dataloader):
             #################################################################
             #                           TRAINING                            #
             #################################################################
             train(x)
+            print(cpt)
 
     main()
