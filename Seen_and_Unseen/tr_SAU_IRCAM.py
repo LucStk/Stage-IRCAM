@@ -134,11 +134,14 @@ with tf.device(comp_device) :
         with tf.GradientTape() as tape_gen:
             out   = auto_encodeur(x, z)
             l_gen = MSE(x, out)
-            scaled_loss = ae_optim.get_scaled_loss(l_gen)
+            #scaled_loss = ae_optim.get_scaled_loss(l_gen)
 
         tr_var = auto_encodeur.trainable_variables
+        """
         scaled_grad = tape_gen.gradient(scaled_loss, tr_var)
         grad_gen  = ae_optim.get_unscaled_gradients(scaled_grad)
+        """
+        grad_gen = tape_gen.gradient(l_gen, tr_var)
         ae_optim.apply_gradients(zip(grad_gen, tr_var))
     
 
