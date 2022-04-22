@@ -263,7 +263,7 @@ class SAU_GAN(tf.keras.Model):
     self.decodeur = Decodeur_SAU()
 
   def compile(self, ae_optim, disc_optim, loss, steps_per_execution=1):
-    super(SAU_GAN, self).compile(steps_per_execution)
+    super(SAU_GAN, self).compile(steps_per_execution= steps_per_execution)
     self.ae_optim   = ae_optim
     self.disc_optim = disc_optim
     self.loss       = loss
