@@ -268,9 +268,8 @@ class SAU_GAN(tf.keras.Model):
     self.loss    = loss
 
   def call(self, input):
-    print(input)
-    print(input.shape)
-    (x, phi, y) = input
+    x   = input[:,:80]
+    phi = input[:,80:]
     x = normalisation(x)
 
     with tf.GradientTape() as tape_gen:
