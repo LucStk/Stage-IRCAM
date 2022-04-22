@@ -70,6 +70,8 @@ with tf.device(comp_device) :
     optimizer_AE = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
     auto_encodeur = Auto_Encodeur_SAU()
     discriminator = Discriminator_SAU()
+    auto_encodeur.compile()
+
     ser = SER()
     BCE = tf.keras.losses.BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
     MSE = tf.keras.losses.MeanSquaredError()
@@ -134,8 +136,12 @@ with tf.device(comp_device) :
 
 
     print("Every thing ready, beging training")
-    for cpt, x in enumerate(train_dataloader):
-        #################################################################
-        #                           TRAINING                            #
-        #################################################################
-        train(x)
+    @tf.function
+    def main():
+        for cpt, x in enumerate(train_dataloader):
+            #################################################################
+            #                           TRAINING                            #
+            #################################################################
+            train(x)
+
+    main()
