@@ -120,7 +120,9 @@ with tf.device(comp_device) :
     print("Data_loaders ready")
 
     @tf.function
-    def train(x, z):
+    def train(x):
+        x = input[:,:80]
+        z = input[:,80:]
         x = normalisation(x)
         with tf.GradientTape() as tape_gen:#, tf.GradientTape() as tape_disc:
             # Apprentissage générateur
@@ -132,8 +134,8 @@ with tf.device(comp_device) :
 
 
     print("Every thing ready, beging training")
-    for cpt, (x,z,y) in enumerate(train_dataloader):
+    for cpt, x in enumerate(train_dataloader):
         #################################################################
         #                           TRAINING                            #
         #################################################################
-        train(x,z)
+        train(x)
