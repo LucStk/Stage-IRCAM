@@ -8,17 +8,6 @@ from pathlib import Path
 import re
 import math
 
-"""
-Contient la class AttHACK_Mell_Spect, 
-
-data_name example : 'F03_a2_s036_v04_melspc.p'
-
-a1 : amical
-a2 : distant
-a3 : dominant
-a4 : séducteur
-"""
-
 def remplissage(x, max, pad = 0):
     """
     Prend une matrice en entrée en rajoute (max-x.shape[1]) padd à la fin
@@ -217,7 +206,6 @@ class ESD_data_generator_ALL_SAU(Sequence):
 
         self.order   = tf.range(len(self.x))
         self.sh      = shuffle
-        self.file_path  = file_path
         self.batch_size = batch_size
         if self.sh:
             self.shuffle()
@@ -232,6 +220,7 @@ class ESD_data_generator_ALL_SAU(Sequence):
         if self.sh:
             tf.random.shuffle(self.order)
 
+
     def __getitem__(self, idx):
         """
         Applique le ser sur les items
@@ -239,10 +228,10 @@ class ESD_data_generator_ALL_SAU(Sequence):
         sortie : x(n_batch*lenght, 80), latent(n_batch*lenght, 128)
         """
         indices = self.order[idx*self.batch_size:(idx+1)*self.batch_size]
-        x = self.x[idx*self.batch_size:(idx+1)*self.batch_size]#tf.gather(self.x, indices=indices)
-        z = self.z[idx*self.batch_size:(idx+1)*self.batch_size]#tf.gather(self.z, indices=indices)
-        y = self.y[idx*self.batch_size:(idx+1)*self.batch_size]#tf.gather(self.y, indices=indices)
-        return x,z,y
+        x = tf.gather(self.x, indices=indices)
+        z = tf.gather(self.z, indices=indices)
+        y = tf.gather(self.y, indices=indices)
+        return x,y,z
 
 class ESD_batch_data_generator(Sequence):
     def __init__(self, file_path, batch_size=1,batch_size_2=1, shuffle=True, 

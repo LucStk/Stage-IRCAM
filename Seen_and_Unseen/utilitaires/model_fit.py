@@ -3,6 +3,7 @@ import tensorflow.keras.activations  as act
 import tensorflow.keras as ks
 import tensorflow.keras.layers as layers
 from tensorflow.keras import Model
+from utilitaires.utils import *
 import numpy as np
 
 # Valeurs observés dans les data
@@ -427,9 +428,10 @@ class Auto_Encodeur_SAU(Auto_Encodeur_rnn):
 
   def call(self,x, phi):
     """
-    x   : (b*lenght, 128)
+    x   : (b*lenght, 128) non normalisé
     phi : (b*lenght, 128)
     """
+    x = normalisation(x)
     phi    = tf.expand_dims(phi, axis=1) #(b*lenght, 1, 128)
     latent = self.encodeur(x)#(b*lenght, 1, 128)
     latent = tf.concat((phi,latent), axis = 2)

@@ -6,7 +6,7 @@ from sympy import discriminant
 from yaml import load
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
-from utilitaires.model import SER, Auto_Encodeur_SAU, Discriminator_SAU 
+from Seen_and_Unseen.utilitaires.All_model import SER, Auto_Encodeur_SAU, Discriminator_SAU 
 from utilitaires.utils import *
 import datetime
 import sys

@@ -3,7 +3,7 @@ from sklearn.utils import shuffle
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
 from utilitaires.dataloader_ESD_tf import ESD_data_generator
-from utilitaires.model import *
+from Seen_and_Unseen.utilitaires.All_model import *
 from utilitaires.utils import *
 import datetime
 import sys
