@@ -119,11 +119,8 @@ with tf.device(comp_device) :
 
     print("Data_loaders ready")
 
-    print("Every thing ready, beging training")
-    for cpt, (x,z,y) in enumerate(train_dataloader):
-        #################################################################
-        #                           TRAINING                            #
-        #################################################################
+    @tf.function
+    def train(x, z):
         x = normalisation(x)
         with tf.GradientTape() as tape_gen:#, tf.GradientTape() as tape_disc:
             # Apprentissage générateur
@@ -133,4 +130,10 @@ with tf.device(comp_device) :
         grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.encodeur.trainable_variables)
         optimizer_AE.apply_gradients(zip(grad_gen, auto_encodeur.encodeur.trainable_variables))
 
-        if (cpt % 50 == 0): print(cpt)
+
+    print("Every thing ready, beging training")
+    for cpt, (x,z,y) in enumerate(train_dataloader):
+        #################################################################
+        #                           TRAINING                            #
+        #################################################################
+        train(x,z)
