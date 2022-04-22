@@ -175,10 +175,14 @@ with tf.device(comp_device) :
 
         return ret
 
+    def write(metric, type = 'train'):
+        with summary_writer.as_default():
+            for (k, v) in metric.items():
+                tf.summary.scalar(type+'/'+k,v, step=cpt)
+                
     ###################################################################
     #                            Training                             #
     ###################################################################
-    """
     import contextlib
     @contextlib.contextmanager
     def options(options):
@@ -190,29 +194,22 @@ with tf.device(comp_device) :
             tf.config.optimizer.set_experimental_options(old_opts)
 
     with options({'constant_folding': True}):
-    """
 
-    def write(metric, type = 'train'):
-        with summary_writer.as_default():
-            for (k, v) in metric.items():
-                tf.summary.scalar(type+'/'+k,v, step=cpt)
-
-
-    for cpt, x in enumerate(train_dataloader):
-        metric_train = train(x)
-
-        if ((cpt +1) % 100) == 0:
-            write(metric_train, "train")
-
-        if (cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
-            print("Test Time")
-            input = test_dataloader[cpt%len_test_dataloader]
-            metric_test = test(input)
-            write(metric_test, "test")
+        for cpt, x in enumerate(train_dataloader):
+            metric_train = train(x)
             
-        if True:#(cpt+1) % (2*len_test_dataloader) == 0:
-            print("rec audio")
-            rec_audios = create_audio()
-            with audio_summary_writer.as_default():
-                for (k, v) in rec_audios.items():
-                    tf.summary.audio(k,v, 24000, step=cpt) 
+            if ((cpt +1) % 100) == 0:
+                write(metric_train, "train")
+
+            if (cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
+                print("Test Time", cpt)
+                input = test_dataloader[cpt%len_test_dataloader]
+                metric_test = test(input)
+                write(metric_test, "test")
+                
+            if (cpt+1) % (2*len_test_dataloader) == 0:
+                print("rec audio", cpt)
+                rec_audios = create_audio()
+                with audio_summary_writer.as_default():
+                    for (k, v) in rec_audios.items():
+                        tf.summary.audio(k,v, 24000, step=cpt) 
