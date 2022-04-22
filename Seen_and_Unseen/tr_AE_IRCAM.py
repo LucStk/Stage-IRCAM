@@ -197,9 +197,11 @@ with tf.device(comp_device) :
         for cpt, x in enumerate(train_dataloader):
             train(cpt, x)
 
+            """
             if (cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
                 print("test ",cpt)
                 test(cpt)
             
             if (cpt+1) % (2*len_test_dataloader) == 0:
                 create_audio(cpt)
+            """
