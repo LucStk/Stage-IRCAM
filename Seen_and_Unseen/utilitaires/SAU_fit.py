@@ -276,11 +276,14 @@ class SAU_GAN(tf.keras.Model):
     with tf.GradientTape() as tape_gen:
       phi    = tf.expand_dims(phi, axis=1) #(b*lenght, 1, 128)
       latent = self.encodeur(x)#(b*lenght, 1, 128)
+      l_gen  = self.loss(x, tf.ones_like(x))
+      """
       latent = tf.concat((phi,latent), axis = 2)
       out    = self.decodeur(latent)
       l_gen  = self.loss(x, out)
-    
-    tr_variables = [*self.decodeur.trainable_variables,*self.encodeur.trainable_variables]
+      """
+    tr_variables = self.encodeur.trainable_variables
+    #tr_variables = [*self.decodeur.trainable_variables,*self.encodeur.trainable_variables]
 
     grad_gen = tape_gen.gradient(l_gen, tr_variables)
     self.ae_optim.apply_gradients(zip(grad_gen, tr_variables))
