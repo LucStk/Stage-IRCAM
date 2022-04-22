@@ -64,11 +64,10 @@ load_SER_path = ov.get('--load_SER')
 no_metrics    = ov.get('--no_metrics') == "true"
 
 with tf.device(comp_device) :
-    tf.debugging.set_log_device_placement(True)
-    #optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
+
     optim_disc = tf.keras.optimizers.Adam(learning_rate = LR)
     ae_optim   = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
-    #ae_optim = tf.keras.mixed_precision.LossScaleOptimizer(ae_optim)
+    ae_optim = tf.keras.mixed_precision.LossScaleOptimizer(ae_optim)
     
     auto_encodeur = Auto_Encodeur_SAU()
     discriminator = Discriminator_SAU()
@@ -160,10 +159,13 @@ with tf.device(comp_device) :
         with tf.GradientTape() as tape_gen:
             out   = auto_encodeur(x, z)
             l_gen = MSE(x, out)
+            l_gen = ae_optim.get_scaled_loss(l_gen)
 
-        grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.encodeur.trainable_variables)
-        ae_optim.apply_gradients(zip(grad_gen, auto_encodeur.encodeur.trainable_variables))
-    
+        tr_var   = auto_encodeur.trainable_variables
+        grad_gen = tape_gen.gradient(l_gen, tr_var)
+        grad_gen = ae_optim.get_unscaled_gradients(grad_gen)
+        ae_optim.apply_gradients(zip(grad_gen, tr_var))
+
     import contextlib
     @contextlib.contextmanager
     def options(options):
