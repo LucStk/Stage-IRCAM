@@ -213,6 +213,7 @@ with tf.device(comp_device) :
             write(metric_test, "test")
             
         if True:#(cpt+1) % (2*len_test_dataloader) == 0:
+            print("rec audio")
             rec_audios = create_audio()
             with audio_summary_writer.as_default():
                 for (k, v) in rec_audios.items():
