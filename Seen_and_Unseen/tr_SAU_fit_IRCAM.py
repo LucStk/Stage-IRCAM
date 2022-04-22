@@ -120,5 +120,5 @@ with tf.device(comp_device) :
 
     SAU.compile(ae_optim,disc_optim,MSE)
     print(SAU(train_dataloader[0]))
-    #SAU.fit(train_dataloader, epochs = 10) 
+    SAU.fit(train_dataloader, epochs = 10) 
 
