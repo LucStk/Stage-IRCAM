@@ -68,7 +68,7 @@ with tf.device(comp_device) :
     #optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
     optim_disc = tf.keras.optimizers.Adam(learning_rate = LR)
     ae_optim   = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
-    #ae_optim = tf.mixed_precision.LossScaleOptimizer(ae_optim)
+    ae_optim = tf.mixed_precision.LossScaleOptimizer(ae_optim)
     
     auto_encodeur = Auto_Encodeur_SAU()
     discriminator = Discriminator_SAU()
