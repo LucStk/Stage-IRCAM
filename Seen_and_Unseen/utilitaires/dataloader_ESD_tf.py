@@ -231,7 +231,7 @@ class ESD_data_generator_ALL_SAU(Sequence):
         x = tf.gather(self.x, indices=indices)
         z = tf.gather(self.z, indices=indices)
         y = tf.gather(self.y, indices=indices)
-        return x,z,y
+        return x,z,y #tf.concat((x,z), axis = 0)
 
 class ESD_batch_data_generator(Sequence):
     def __init__(self, file_path, batch_size=1,batch_size_2=1, shuffle=True, 

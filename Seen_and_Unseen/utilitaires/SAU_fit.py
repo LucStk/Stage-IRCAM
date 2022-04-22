@@ -267,7 +267,7 @@ class SAU_GAN(tf.keras.Model):
     self.disc_optim = disc_optim
     self.loss    = loss
 
-  def call(self, x,z,y):
+  def call(self, input):
     print(len(input.shape))
     (x, phi, y) = input
     x = normalisation(x)
