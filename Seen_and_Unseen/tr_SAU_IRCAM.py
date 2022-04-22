@@ -152,23 +152,19 @@ with tf.device(comp_device) :
         train(x)
     """
 
-    def get():
-        @tf.function
-        def train(input):
-            x = input[:,:80]
-            z = input[:,80:]
-            x = normalisation(x)
-            with tf.GradientTape() as tape_gen:#, tf.GradientTape() as tape_disc:
-                # Apprentissage générateur
-                out   = auto_encodeur(x, z)
-                l_gen = MSE(x, out) #tf.reduce_mean(MSE(x,out))
+    @tf.function
+    def train(input):
+        x = input[:,:80]
+        z = input[:,80:]
+        x = normalisation(x)
+        with tf.GradientTape() as tape_gen:
+            out   = auto_encodeur(x, z)
+            l_gen = MSE(x, out)
 
-            grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.encodeur.trainable_variables)
-            ae_optim.apply_gradients(zip(grad_gen, auto_encodeur.encodeur.trainable_variables))
-        return train
-    import traceback
+        grad_gen  = tape_gen.gradient(l_gen, auto_encodeur.encodeur.trainable_variables)
+        ae_optim.apply_gradients(zip(grad_gen, auto_encodeur.encodeur.trainable_variables))
+    
     import contextlib
-
     @contextlib.contextmanager
     def options(options):
         old_opts = tf.config.optimizer.get_experimental_options()
@@ -178,11 +174,6 @@ with tf.device(comp_device) :
         finally:
             tf.config.optimizer.set_experimental_options(old_opts)
 
-
-    with options({'constant_folding': False}):
-        train = get()
+    with options({'constant_folding': True}):
         for cpt, x in enumerate(train_dataloader):
-            #################################################################
-            #                           TRAINING                            #
-            #################################################################
             train(x)

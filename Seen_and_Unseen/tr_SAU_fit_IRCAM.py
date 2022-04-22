@@ -118,8 +118,8 @@ with tf.device(comp_device) :
     BCE = tf.keras.losses.BinaryCrossentropy()
     MSE = tf.keras.losses.MeanSquaredError()
 
-    SAU.compile(ae_optim,disc_optim,MSE)
-    SAU.build(input_shape=(None,80+128))
-    print(SAU(train_dataloader[0]))
+    SAU.compile(ae_optim,disc_optim, MSE)
+    #SAU.build(input_shape=(None,80+128))
+    #print(SAU(train_dataloader[0]))
     SAU.fit(train_dataloader, epochs = 10) 
 
