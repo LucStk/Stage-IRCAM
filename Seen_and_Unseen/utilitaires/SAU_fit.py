@@ -265,7 +265,7 @@ class SAU_GAN(tf.keras.Model):
     super(SAU_GAN, self).compile()
     self.ae_optim   = ae_optim
     self.disc_optim = disc_optim
-    self.loss    = loss
+    self.loss       = loss
 
   def call(self, input):
     x   = input[:,:80]

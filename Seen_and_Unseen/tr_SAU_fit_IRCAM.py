@@ -119,5 +119,6 @@ with tf.device(comp_device) :
     MSE = tf.keras.losses.MeanSquaredError()
 
     SAU.compile(ae_optim,disc_optim,MSE)
-    SAU.fit(train_dataloader, epochs = 10) 
+    SAU(train_dataloader[0])
+    #SAU.fit(train_dataloader, epochs = 10) 
 
