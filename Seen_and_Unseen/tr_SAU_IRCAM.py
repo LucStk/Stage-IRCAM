@@ -186,4 +186,3 @@ with tf.device(comp_device) :
             #                           TRAINING                            #
             #################################################################
             train(x)
-            print(cpt)
