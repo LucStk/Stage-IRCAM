@@ -267,9 +267,9 @@ class SAU_GAN(tf.keras.Model):
     self.disc_optim = disc_optim
     self.loss    = loss
 
-  def call(self, input):
-    print(len(input))
-    (x, phi, y) = input
+  def call(self, x,z,y):
+    print(len(x.shape))
+    print(len(z.shape))
     x = normalisation(x)
 
     with tf.GradientTape() as tape_gen:
