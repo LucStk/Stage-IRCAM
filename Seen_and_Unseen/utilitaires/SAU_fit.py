@@ -89,7 +89,6 @@ class Auto_Encodeur_SAU(Auto_Encodeur_rnn):
     x   : (b*lenght, 128) non normalisé
     phi : (b*lenght, 128)
     """
-    x = normalisation(x)
     phi    = tf.expand_dims(phi, axis=1) #(b*lenght, 1, 128)
     latent = self.encodeur(x)#(b*lenght, 1, 128)
     latent = tf.concat((phi,latent), axis = 2)
