@@ -55,7 +55,7 @@ SHUFFLE    = True
 LANGAGE    = "english"
 
 EPOCH = 100
-LR_AE = 1e-4
+LR_AE = 1e-5
 TEST_EPOCH = 1/4
 
 load_path     = ov.get('--load')
@@ -64,7 +64,7 @@ no_metrics    = ov.get('--no_metrics') == "true"
 
 with tf.device(comp_device) :
     ae_optim   = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
-    ae_optim   = tf.keras.mixed_precision.LossScaleOptimizer(ae_optim)
+    #ae_optim   = tf.keras.mixed_precision.LossScaleOptimizer(ae_optim)
     
     auto_encodeur = Auto_Encodeur_SAU()
     #auto_encodeur.compile()
@@ -141,13 +141,14 @@ with tf.device(comp_device) :
         with tf.GradientTape() as tape_gen:
             out   = auto_encodeur(x, z)
             l_gen = MSE(x, out)
-            l_gen = ae_optim.get_scaled_loss(l_gen)
+            #l_gen = ae_optim.get_scaled_loss(l_gen)
 
         tr_var   = auto_encodeur.trainable_variables
         grad_gen = tape_gen.gradient(l_gen, tr_var)
-        grad_gen = ae_optim.get_unscaled_gradients(grad_gen)
+        #grad_gen = ae_optim.get_unscaled_gradients(grad_gen)
         ae_optim.apply_gradients(zip(grad_gen, tr_var))
-        return {"loss_generateur": l_gen}
+        mcd   = MCD_1D(out, x)
+        return {"loss_generateur": l_gen, "MCD":mcd}
 
         
     
@@ -158,7 +159,8 @@ with tf.device(comp_device) :
         x = normalisation(x)
         out   = auto_encodeur(x, z)
         l_gen = MSE(x, out)
-        return {"loss_generateur": l_gen}
+        mcd   = MCD_1D(out, x)
+        return {"loss_generateur": l_gen, "MCD":mcd}
 
     def create_audio():
         l_emotion = ['Angry','Happy', 'Neutral', 'Sad', 'Surprise']

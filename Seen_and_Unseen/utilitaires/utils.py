@@ -123,7 +123,7 @@ class Mel_inverter():
         rec_audio = self.MelInv.synth_from_mel(log_mel_spectrogram)
         return tf.experimental.numpy.atleast_3d(rec_audio)
 
-def MDC(x_hat, x):
+def MCD(x_hat, x):
     x    = x[:,:x_hat.shape[1]]#Crop pour les pertes de reconstruction du decodeur
     mask = tf.cast(x!=0, tf.float64)
     n   = tf.math.reduce_sum(mask[:,:,0], axis=1)#nombre de values a comparer
@@ -136,7 +136,7 @@ def MDC(x_hat, x):
     a = tf.math.multiply(tf.cast(a, dtype=tf.float64), tf.cast(tmp,dtype=tf.float64))
     return tf.math.reduce_mean(a)
 
-def MDC_1D(x_hat, x):
+def MCD_1D(x_hat, x):
     sub = tf.math.subtract(tf.cast(x, tf.float64),tf.cast(x_hat, tf.float64))
     a = tf.math.pow(sub,2)
     a = tf.math.sqrt(tf.math.reduce_sum(a, axis=1))
