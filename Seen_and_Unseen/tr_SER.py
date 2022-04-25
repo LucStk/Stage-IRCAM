@@ -95,17 +95,15 @@ with tf.device(comp_device) :
 
     @tf.function
     def train(x,y):
-        y = tf.one_hot(y,5)
+        y_ = tf.one_hot(y,5)
         x  = normalisation(x)
         with tf.GradientTape() as tape:
             y_hat = ser(x)
-            l     = loss(y,y_hat)
+            l     = loss(y_,y_hat)
 
         tr_var    = ser.trainable_variables
         gradients = tape.gradient(l, tr_var)
         optimizer.apply_gradients(zip(gradients, tr_var))
-        print(y.dtype)
-        print(tf.math.argmax(y_hat, axis = 1).dtype)
         acc  = tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1)), dtype= tf.float64))
         
         return {"loss_SER": l, "accurcay":acc}
