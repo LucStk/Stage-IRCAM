@@ -127,13 +127,14 @@ with tf.device(comp_device) :
         if ((cpt +1) % 100) == 0:
             write(metric_train, "train")
             
-        if True: #((cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0):
+        if ((cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0):
+            print("test")
             (x,y) = test_dataloader[cpt%len_test_dataloader]
             metric_test = test(x,y)
             write(metric_test, "test")
 
-        if True : #(cpt+1) % (10*len_train_dataloader) == 0:
-            print("End batch")
+        if (cpt+1) % (10*len_train_dataloader) == 0:
             print("save")
             ser.save(log_dir, format(cpt//len_train_dataloader))
+            ser.save_weights(log_dir, format(cpt//len_train_dataloader))
 
