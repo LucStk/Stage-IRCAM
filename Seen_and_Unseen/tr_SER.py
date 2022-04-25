@@ -64,7 +64,8 @@ load_path = ov.get('--load')
 
 with tf.device(comp_device) :
     ser    = SER()
-    optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
+    #optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
+    optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
     loss      = tf.keras.losses.BinaryCrossentropy(from_logits = True)
 
     if load_path is not None :
@@ -135,7 +136,7 @@ with tf.device(comp_device) :
             metric_test = test(x,y)
             write(metric_test, "test")
 
-        if (cpt+1) % (10*len_train_dataloader) == 0:
+        if (cpt+1) % (50*len_train_dataloader) == 0:
             print("save")
             ser.save(log_dir, format(cpt//len_train_dataloader))
             ser.save_weights(log_dir, format(cpt//len_train_dataloader))

@@ -488,7 +488,6 @@ class SER(tf.keras.Model):
     super(SER, self).__init__()
     act_rnn  = act.tanh
     act_conv = act.elu
-    act_dens = act.elu
 
     self.conv = tf.keras.models.Sequential([
         layers.Masking(mask_value=0.),
