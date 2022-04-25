@@ -93,8 +93,7 @@ with tf.device(comp_device) :
 
     print("Training Beging")
 
-    @tf.function(input_signature = [tf.TensorSpec(shape=(BATCH_SIZE_TRAIN, None, 80), dtype=tf.float32),
-                                    tf.TensorSpec(shape=(BATCH_SIZE_TRAIN), dtype=tf.int32)])
+    @tf.function
     def train(x,y):
         y = tf.one_hot(y,5)
         x  = normalisation(x)
