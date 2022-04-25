@@ -526,7 +526,7 @@ class SER(tf.keras.Model):
   def call_latent(self, x):
     x = tf.expand_dims(x, axis=-1)
     x = self.conv(x)
-    x = tf.reshape(x, tf.constant([tf.shape(x)[0], -1, tf.shape(x)[-1]]))
+    x = tf.reshape(x, [tf.shape(x)[0], -1, tf.shape(x)[-1]])
     x = self.bi_lstm(x)
     x = self.attention(x)
     return x
