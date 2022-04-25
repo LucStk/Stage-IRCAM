@@ -116,7 +116,7 @@ with tf.device(comp_device) :
         x  = normalisation(x)
         y_hat = ser(x)
         l     = loss(y_,y_hat)
-        acc   = tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1)), dtype= tf.float64))
+        acc   = tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1,output_type=tf.dtypes.int32)), dtype= tf.float64))
         return {"loss_SER": l, "accurcay":acc}
 
     def write(metric, type = 'train'):
