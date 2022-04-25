@@ -153,7 +153,7 @@ class ESD_data_generator_load(Sequence):
             x = np.array([remplissage(i, self.force_padding, pad = 0) for i in x])
         
         x = tf.transpose(x, (0,2,1))
-        return tf.cast(x, tf.float32),tf.cast(y, tf.float32)
+        return tf.cast(x, tf.float32),tf.cast(y, tf.int32)
 
 
 class ESD_data_generator_ALL_SAU(Sequence):
