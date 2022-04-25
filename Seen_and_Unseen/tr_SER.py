@@ -2,7 +2,7 @@ import os
 from sklearn.utils import shuffle
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
-from utilitaires.dataloader_ESD_tf import ESD_data_generator
+from utilitaires.dataloader_ESD_tf import ESD_data_generator_load
 from utilitaires.All_model import *
 from utilitaires.utils import *
 import datetime
@@ -89,21 +89,15 @@ with tf.device(comp_device) :
 
     log_dir        = "logs/SER_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     summary_writer = tf.summary.create_file_writer(log_dir)
-    ################################
-    #          TRAINING            #
-    ################################
+
+
     print("Training Beging")
 
-
-    @tf.function
+    @tf.function(input_signature = [tf.TensorSpec(shape=(BATCH_SIZE_TRAIN, None, 80), dtype=tf.float32),
+                                    tf.TensorSpec(shape=(BATCH_SIZE_TRAIN), dtype=tf.float32)])
     def train(x,y):
-        #y = tf.one_hot(y,5)
-        #x  = normalisation(x)
-
-        #y_hat = ser(x)
-        l   = 0
-        acc = 0
-        """
+        y = tf.one_hot(y,5)
+        x  = normalisation(x)
         with tf.GradientTape() as tape:
             y_hat = ser(x)
             l     = loss(y,y_hat)
@@ -112,8 +106,10 @@ with tf.device(comp_device) :
         gradients = tape.gradient(l, tr_var)
         optimizer.apply_gradients(zip(gradients, tr_var)) 
         acc  = tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1)), dtype= tf.float64))
-        """
+        
         return {"loss_SER": l, "accurcay":acc}
+
+
 
     @tf.function
     def test(x,y):

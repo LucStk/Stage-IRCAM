@@ -141,7 +141,7 @@ class ESD_data_generator_load(Sequence):
         """
         Applique le ser sur les items
         labels : 0 : Angry, 1 : Happy, 2: Neutral, 3: Sad, 4: Surprise
-        sortie : x(n_batch*lenght, 80), latent(n_batch*lenght, 128)
+        sortie : x(n_batch,lenght, 80), latent(n_batch,lenght, 128)
         """
         indices = self.order[idx*self.batch_size:(idx+1)*self.batch_size]
         x = self.x[indices]
@@ -153,7 +153,7 @@ class ESD_data_generator_load(Sequence):
             x = np.array([remplissage(i, self.force_padding, pad = 0) for i in x])
         
         x = tf.transpose(x, (0,2,1))
-        return x,tf.constant(y)
+        return tf.cast(x, tf.float32),tf.cast(y, tf.float32)
 
 
 class ESD_data_generator_ALL_SAU(Sequence):
