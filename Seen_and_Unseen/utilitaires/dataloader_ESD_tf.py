@@ -151,8 +151,9 @@ class ESD_data_generator_load(Sequence):
             x = auto_padding(x)
         else :
             x = np.array([remplissage(i, self.force_padding, pad = 0) for i in x])
-        x = np.transpose(x, (0,2,1))
-        return x,y
+        
+        x = tf.transpose(x, (0,2,1))
+        return x,tf.constant(y)
 
 
 class ESD_data_generator_ALL_SAU(Sequence):
