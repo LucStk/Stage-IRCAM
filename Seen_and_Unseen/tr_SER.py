@@ -93,7 +93,7 @@ with tf.device(comp_device) :
 
     print("Training Beging")
 
-    @tf.function
+    @tf.function(experimental_relax_shapes=True)
     def train(x,y):
         y_ = tf.one_hot(y,5)
         x  = normalisation(x)
