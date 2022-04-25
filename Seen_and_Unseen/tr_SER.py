@@ -97,8 +97,12 @@ with tf.device(comp_device) :
 
     @tf.function
     def train(x,y):
-        
+        y = tf.one_hot(y,5)
         x  = normalisation(x)
+        y_hat = ser(x)
+        l   = 0
+        acc = 0
+        """
         with tf.GradientTape() as tape:
             y_hat = ser(x)
             l     = loss(y,y_hat)
@@ -106,7 +110,8 @@ with tf.device(comp_device) :
         tr_var    = ser.trainable_variables
         gradients = tape.gradient(l, tr_var)
         optimizer.apply_gradients(zip(gradients, tr_var)) 
-        acc  = 0 #tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1)), dtype= tf.float64))
+        acc  = tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1)), dtype= tf.float64))
+        """
         return {"loss_SER": l, "accurcay":acc}
 
     @tf.function
@@ -124,7 +129,8 @@ with tf.device(comp_device) :
                 tf.summary.scalar(type+'/'+k,v, step=cpt)
 
     for cpt, (x,y) in enumerate(train_dataloader):
-        y = tf.one_hot(y,5)
+        print(cpt)
+
         metric_train = train(x,y)
         
         if ((cpt +1) % 10) == 0:
