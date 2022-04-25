@@ -59,17 +59,17 @@ SHUFFLE    = True
 LANGAGE    = "english"
 USE_DATA_QUEUE = True
 LR = 1e-5
-TEST_EPOCH = 2
+TEST_EPOCH = 1/2
 load_path = ov.get('--load')
 
 with tf.device(comp_device) :
-    Model     = SER()
+    ser    = SER()
     optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
     loss      = tf.keras.losses.BinaryCrossentropy(from_logits = True)
 
     if load_path is not None :
         try:
-            Model.load_weights(os.getcwd()+load_path)
+            ser.load_weights(os.getcwd()+load_path)
             print('model load sucessfuly')
         except:
             print("Load not succesful from"+os.getcwd()+load_path)
@@ -100,10 +100,10 @@ with tf.device(comp_device) :
         y_ = tf.one_hot(y,5)
         x  = normalisation(x)
         with tf.GradientTape() as tape: #Normalisation
-            y_hat  = Model(x)
+            y_hat  = ser(x)
             l      = loss(y_,y_hat)
-        gradients = tape.gradient(l, Model.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, Model.trainable_variables)) 
+        gradients = tape.gradient(l, ser.trainable_variables)
+        optimizer.apply_gradients(zip(gradients, ser.trainable_variables)) 
         acc  = tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1)), dtype= tf.float64))
         return {"loss_SER": l, "accurcay":acc}
 
@@ -112,7 +112,7 @@ with tf.device(comp_device) :
         y_ = tf.one_hot(y,5)
         x  = normalisation(x)
 
-        y_hat  = Model(x)
+        y_hat  = ser(x)
         l      = loss(y_,y_hat)
         acc  = tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1)), dtype= tf.float64))
         return {"loss_SER": l, "accurcay":acc}
@@ -128,17 +128,13 @@ with tf.device(comp_device) :
         if ((cpt +1) % 100) == 0:
             write(metric_train, "train")
             
-        ########################################
-        #                TEST                  #
-        ########################################
-
-        if ((cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0):
+        if True: #((cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0):
             (x,y) = test_dataloader[cpt%len_test_dataloader]
             metric_test = test(x,y)
             write(metric_test, "test")
 
-        if (cpt+1) % (10*len_train_dataloader) == 0:
+        if True : #(cpt+1) % (10*len_train_dataloader) == 0:
             print("End batch")
             print("save")
-            Model.save(log_dir, format(cpt//len_train_dataloader))
+            ser.save(log_dir, format(cpt//len_train_dataloader))
 

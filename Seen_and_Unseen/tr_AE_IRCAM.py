@@ -55,7 +55,7 @@ SHUFFLE    = True
 LANGAGE    = "english"
 
 EPOCH = 100
-LR_AE = 1e-4
+LR_AE = 1e-2
 TEST_EPOCH = 1/2
 
 load_path     = ov.get('--load')
@@ -63,7 +63,13 @@ load_SER_path = ov.get('--load_SER')
 no_metrics    = ov.get('--no_metrics') == "true"
 
 with tf.device(comp_device) :
-    ae_optim   = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
+
+    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+        initial_learning_rate=LR_AE,
+        decay_steps=10000,
+        decay_rate=0.9)
+
+    ae_optim   = tf.keras.optimizers.RMSprop(learning_rate = lr_schedule)
     #ae_optim   = tf.keras.mixed_precision.LossScaleOptimizer(ae_optim)
     
     auto_encodeur = Auto_Encodeur_SAU()
