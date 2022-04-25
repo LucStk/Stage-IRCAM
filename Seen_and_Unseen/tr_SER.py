@@ -97,13 +97,13 @@ with tf.device(comp_device) :
 
     @tf.function
     def train(x,y):
-        y_ = tf.one_hot(y,5)
+        
         x  = normalisation(x)
         with tf.GradientTape() as tape:
-            y_hat  = ser(x)
-            l      = loss(y_,y_hat)
+            y_hat = ser(x)
+            l     = loss(y,y_hat)
 
-        tr_var = ser.trainable_variables
+        tr_var    = ser.trainable_variables
         gradients = tape.gradient(l, tr_var)
         optimizer.apply_gradients(zip(gradients, tr_var)) 
         acc  = 0 #tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1)), dtype= tf.float64))
@@ -124,6 +124,7 @@ with tf.device(comp_device) :
                 tf.summary.scalar(type+'/'+k,v, step=cpt)
 
     for cpt, (x,y) in enumerate(train_dataloader):
+        y = tf.one_hot(y,5)
         metric_train = train(x,y)
         
         if ((cpt +1) % 10) == 0:
