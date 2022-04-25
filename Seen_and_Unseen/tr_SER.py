@@ -92,8 +92,7 @@ with tf.device(comp_device) :
 
 
     print("Training Beging")
-
-    @tf.function(experimental_relax_shapes=True,jit_compile=True)
+    @tf.function(experimental_relax_shapes=True)
     def train(x,y):
         y_ = tf.one_hot(y,5)
         x  = normalisation(x)
@@ -129,7 +128,7 @@ with tf.device(comp_device) :
 
         metric_train = train(x,y)
         
-        if ((cpt +1) % 10) == 0:
+        if ((cpt +1) % 30) == 0:
             write(metric_train, "train")
             
         if ((cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0):
