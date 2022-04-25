@@ -55,8 +55,8 @@ SHUFFLE    = True
 LANGAGE    = "english"
 
 EPOCH = 100
-LR_AE = 1e-5
-TEST_EPOCH = 1/4
+LR_AE = 1e-4
+TEST_EPOCH = 1/2
 
 load_path     = ov.get('--load')
 load_SER_path = ov.get('--load_SER')
@@ -209,7 +209,7 @@ with tf.device(comp_device) :
                 metric_test = test(input)
                 write(metric_test, "test")
                 
-            if (cpt+1) % (2*len_train_dataloader) == 0:
+            if (cpt+1) % (10*len_train_dataloader) == 0:
                 print("rec audio", cpt)
                 rec_audios = create_audio()
                 with audio_summary_writer.as_default():
