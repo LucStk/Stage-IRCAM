@@ -96,7 +96,7 @@ with tf.device(comp_device) :
 
 
     @tf.function
-    def train(input,y):
+    def train(x,y):
         y_ = tf.one_hot(y,5)
         x  = normalisation(x)
         with tf.GradientTape() as tape: #Normalisation
@@ -134,8 +134,8 @@ with tf.device(comp_device) :
         ########################################
 
         if ((cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0):
-            input = test_dataloader[cpt%len_test_dataloader]
-            metric_test = test(input)
+            (x,y) = test_dataloader[cpt%len_test_dataloader]
+            metric_test = test(x,y)
             write(metric_test, "test")
 
         if (cpt+1) % (10*len_train_dataloader) == 0:
