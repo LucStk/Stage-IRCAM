@@ -117,7 +117,6 @@ with tf.device(comp_device) :
         acc  = tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1)), dtype= tf.float64))
         return {"loss_SER": l, "accurcay":acc}
 
-    @tf.function
     def write(metric, type = 'train'):
         with summary_writer.as_default():
             for (k, v) in metric.items():
