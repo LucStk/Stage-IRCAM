@@ -124,8 +124,6 @@ with tf.device(comp_device) :
                 tf.summary.scalar(type+'/'+k,v, step=cpt)
 
     for cpt, (x,y) in enumerate(train_dataloader):
-        print(cpt)
-
         metric_train = train(x,y)
         
         if ((cpt +1) % 30) == 0:
