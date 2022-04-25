@@ -108,7 +108,7 @@ with tf.device(comp_device) :
         return {"loss_SER": l, "accurcay":acc}
 
     @tf.function
-    def test(input,y):
+    def test(x,y):
         y_ = tf.one_hot(y,5)
         x  = normalisation(x)
 
@@ -124,7 +124,7 @@ with tf.device(comp_device) :
                 tf.summary.scalar(type+'/'+k,v, step=cpt)
 
     for cpt, (x,y) in enumerate(train_dataloader):
-        metric_train = train(x)
+        metric_train = train(x,y)
         
         if ((cpt +1) % 100) == 0:
             write(metric_train, "train")
