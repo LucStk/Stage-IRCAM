@@ -55,7 +55,7 @@ SHUFFLE    = True
 LANGAGE    = "english"
 
 EPOCH = 100
-LR_AE = 1e-3
+LR_AE = 1e-4
 TEST_EPOCH = 1/2
 
 load_path     = ov.get('--load')
