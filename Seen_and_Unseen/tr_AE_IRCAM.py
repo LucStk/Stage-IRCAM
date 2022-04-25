@@ -162,6 +162,13 @@ with tf.device(comp_device) :
         mcd   = MCD_1D(out, x)
         return {"loss_generateur": l_gen, "MCD":mcd}
 
+
+    @tf.function
+    def write(metric, type = 'train'):
+        with summary_writer.as_default():
+            for (k, v) in metric.items():
+                tf.summary.scalar(type+'/'+k,v, step=cpt)
+
     def create_audio():
         l_emotion = ['Angry','Happy', 'Neutral', 'Sad', 'Surprise']
         with audio_summary_writer.as_default(): 
@@ -177,10 +184,7 @@ with tf.device(comp_device) :
 
         return ret
 
-    def write(metric, type = 'train'):
-        with summary_writer.as_default():
-            for (k, v) in metric.items():
-                tf.summary.scalar(type+'/'+k,v, step=cpt)
+
                 
     ###################################################################
     #                            Training                             #

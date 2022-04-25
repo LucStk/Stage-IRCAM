@@ -542,8 +542,11 @@ class SER(tf.keras.Model):
     x = self.H(x)    
     return x
 
+  def save(self, file, step):
+    super().save(file+'/SER_model/'+str(step))
+
   def save_weights(self, file, step):
-    super().save_weights(file+'/SER/'+str(step))
+    super().save_weights(file+'/SER_weights/'+str(step))
 
   def load_weights(self, file,  step = None):
     if step is None:

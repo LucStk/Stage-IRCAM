@@ -87,49 +87,59 @@ with tf.device(comp_device) :
         data_queue.start(workers = 4, max_queue_size=20)
         train_dataloader = data_queue.get()
 
-    log_dir        = "logs_SER/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_dir        = "logs/SER_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     summary_writer = tf.summary.create_file_writer(log_dir)
     ################################
     #          TRAINING            #
     ################################
     print("Training Beging")
-    for cpt, (x,y) in enumerate(train_dataloader):
+
+
+    @tf.function
+    def train(input,y):
         y_ = tf.one_hot(y,5)
         x  = normalisation(x)
-        
         with tf.GradientTape() as tape: #Normalisation
             y_hat  = Model(x)
             l      = loss(y_,y_hat)
         gradients = tape.gradient(l, Model.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, Model.trainable_variables))  
+        optimizer.apply_gradients(zip(gradients, Model.trainable_variables)) 
+        acc  = tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1)), dtype= tf.float64))
+        return {"loss_SER": l, "accurcay":acc}
+
+    @tf.function
+    def test(input,y):
+        y_ = tf.one_hot(y,5)
+        x  = normalisation(x)
+
+        y_hat  = Model(x)
+        l      = loss(y_,y_hat)
+        acc  = tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1)), dtype= tf.float64))
+        return {"loss_SER": l, "accurcay":acc}
+
+    @tf.function
+    def write(metric, type = 'train'):
+        with summary_writer.as_default():
+            for (k, v) in metric.items():
+                tf.summary.scalar(type+'/'+k,v, step=cpt)
+
+    for cpt, (x,y) in enumerate(train_dataloader):
+        metric_train = train(x)
         
-        if (cpt% 20 == 0) : 
-            print(cpt)
-            acc  = tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1)), dtype= tf.float64))
-            with summary_writer.as_default():
-                tf.summary.scalar('train/loss',l, step=cpt)
-                tf.summary.scalar('train/acc',acc, step=cpt)
+        if ((cpt +1) % 100) == 0:
+            write(metric_train, "train")
             
         ########################################
         #                TEST                  #
         ########################################
 
         if ((cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0):
-            print('test_time')
-            (x,y) = test_dataloader[cpt%len_test_dataloader]
-
-            y_    = tf.one_hot(y,5)
-            x     = normalisation(x) 
-            y_hat = Model(x)
-            l     = loss(y_,y_hat)
-            
-            acc = tf.reduce_mean(tf.cast(y == tf.math.argmax(y_hat, axis = 1), dtype= tf.float64))
-            with summary_writer.as_default(): 
-                tf.summary.scalar('test/loss',l, step=cpt)
-                tf.summary.scalar('test/acc',acc, step=cpt)
+            input = test_dataloader[cpt%len_test_dataloader]
+            metric_test = test(input)
+            write(metric_test, "test")
 
         if (cpt+1) % (10*len_train_dataloader) == 0:
             print("End batch")
             print("save")
-            Model.save_weights(log_dir, format(cpt//len_train_dataloader))
+            Model.save(log_dir, format(cpt//len_train_dataloader))
 
