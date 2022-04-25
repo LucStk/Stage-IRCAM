@@ -99,8 +99,8 @@ with tf.device(comp_device) :
     def train(x,y):
         y = tf.one_hot(y,5)
         x  = normalisation(x)
-        
-        y_hat = ser(x)
+
+        #y_hat = ser(x)
         l   = 0
         acc = 0
         """
