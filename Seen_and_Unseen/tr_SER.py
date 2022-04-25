@@ -103,7 +103,9 @@ with tf.device(comp_device) :
 
         tr_var    = ser.trainable_variables
         gradients = tape.gradient(l, tr_var)
-        optimizer.apply_gradients(zip(gradients, tr_var)) 
+        optimizer.apply_gradients(zip(gradients, tr_var))
+        print(type(y))
+        print(type(tf.math.argmax(y_hat, axis = 1)))
         acc  = tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1)), dtype= tf.float64))
         
         return {"loss_SER": l, "accurcay":acc}
