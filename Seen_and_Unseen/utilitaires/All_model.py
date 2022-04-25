@@ -341,7 +341,7 @@ IMPLEMENTATION Papier Seen and Unseen
 class Encodeur_SAU(tf.keras.Model):
   def __init__(self):
     super(Encodeur_SAU, self).__init__()
-    act_conv = act.relu
+    act_conv = act.elu
     self.conv = tf.keras.models.Sequential([
         layers.Masking(mask_value=0.),
         
