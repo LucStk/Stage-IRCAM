@@ -106,7 +106,7 @@ with tf.device(comp_device) :
     len_test_dataloader  = len(test_dataloader)
 
     #Utilisation data_queue
-    if True:
+    if False:
         print("begin data_queue")
         data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
         data_queue.start(4, 20)
@@ -115,11 +115,11 @@ with tf.device(comp_device) :
     print("Every thing ready, beging training")
     disc_optim = tf.keras.optimizers.Adam(learning_rate = LR)
     ae_optim   = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
-    BCE = tf.keras.losses.BinaryCrossentropy()
-    MSE = tf.keras.losses.MeanSquaredError()
 
-    SAU.compile(ae_optim,disc_optim, MSE, steps_per_execution=4)
+    SAU.compile(ae_optim,disc_optim, steps_per_execution=4)
     #SAU.build(input_shape=(None,80+128))
-    #print(SAU(train_dataloader[0]))
-    SAU.fit(train_dataloader, epochs = 10) 
-
+    x   = train_dataloader[0]
+    phi = x[:,80:]
+    x   = x[:,:80]
+    print(SAU.auto_encodeur(x,phi).shape)
+    SAU.fit(train_dataloader, epochs = 10, workers = 4, max_queue_size = 20)

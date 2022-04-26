@@ -56,8 +56,8 @@ LANGAGE    = "english"
 
 EPOCH = 100
 LR_AE   = 1e-3
-LR_DISC = 1e-4
-TEST_EPOCH = 1/2
+LR_DISC = 5e-4
+TEST_EPOCH = 1/4
 
 load_path     = ov.get('--load')
 load_SER_path = ov.get('--load_SER')
@@ -70,8 +70,9 @@ with tf.device(comp_device) :
         decay_steps=10000,
         decay_rate=0.9)
 
-    ae_optim = tf.keras.optimizers.RMSprop(learning_rate = lr_schedule)
-    
+    ae_optim   = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
+    disc_optim = tf.keras.optimizers.RMSprop(learning_rate = LR_DISC)
+
     auto_encodeur  = Auto_Encodeur_SAU()
     discriminateur = Discriminateur_SAU()
     ser = SER()
@@ -142,35 +143,36 @@ with tf.device(comp_device) :
 
     print("Every thing ready, beging training")
 
-    @tf.function
+    @tf.function(jit_compile=True)
     def train(input):
         x = input[:,:80]
         z = input[:,80:]
         x = normalisation(x)
         # Apprentissage AE pour tromper le générateur
-        with tf.GradientTape() as tape_gen:
+        
+        with tf.GradientTape() as tape_gen,tf.GradientTape() as tape_disc:
             out_ae  = auto_encodeur(x, z)
             d_false = discriminateur(out_ae)
             l_gen   = tf.math.reduce_mean(BCE(tf.ones_like(d_false), d_false))
         
-        tr_var_ae   = auto_encodeur.trainable_variables
-        grad_gen = tape_gen.gradient(l_gen   , tr_var_ae)
+            d_true = discriminateur(x)
+            l_disc = tf.math.reduce_mean(BCE(tf.ones_like(d_true), d_true) +\
+                                         BCE(tf.zeros_like(d_false), d_false))
         
+
+        tr_var_ae = auto_encodeur.trainable_variables
+        grad_gen  = tape_gen.gradient(l_gen  , tr_var_ae)
         ae_optim.apply_gradients(zip(grad_gen, tr_var_ae))
 
-        # Apprentissage Discriminateur
-        with tf.GradientTape() as tape_disc:
-            d_true = discriminateur(x)
-            l_disc = tf.math.reduce_mean(BCE(tf.ones_like(d_true), d_true) + BCE(tf.zeros_like(d_false), d_false))
-        
         tr_var_disc = discriminateur.trainable_variables
         grad_disc   = tape_disc.gradient(l_disc, tr_var_disc)
-        ae_optim.apply_gradients(zip(grad_disc, tr_var_disc))
+        disc_optim.apply_gradients(zip(grad_disc, tr_var_disc))
         
         mcd = MCD_1D(out_ae, x)
-        return {"loss_generateur": l_gen,"loss_generateur": l_disc, "MCD":mcd}
+        return {"loss_generateur": l_gen,"loss_discriminateur": l_disc, "MCD":mcd}
+        
 
-    @tf.function
+    @tf.function(jit_compile=True)
     def test(input):
         x = input[:,:80]
         z = input[:,80:]
@@ -180,13 +182,21 @@ with tf.device(comp_device) :
         l_gen   = tf.math.reduce_mean(BCE(tf.ones_like(d_false), d_false))
         
         d_true = discriminateur(x)
-        l_disc = tf.math.reduce_mean(BCE(tf.ones_like(d_true), d_true) + BCE(tf.zeros_like(d_false), d_false))
+
+        acc_true  = tf.reduce_mean(tf.cast(d_true > 0.5, dtype = tf.int32))
+        acc_false = tf.reduce_mean(tf.cast(d_false < 0.5, dtype = tf.int32))
+
+        l_disc = tf.math.reduce_mean(BCE(tf.ones_like(d_true), d_true)+\
+                                     BCE(tf.zeros_like(d_false), d_false))
 
         mcd = MCD_1D(out_ae, x)
-        return {"loss_generateur": l_gen,"loss_generateur": l_disc, "MCD":mcd}
-
-    @tf.function
-    def write(metric, type = 'train'):
+        return {"loss_generateur": l_gen,
+                "loss_discriminateur": l_disc, 
+                "acc_true_discriminateur" :acc_true,
+                "acc_false_discriminateur" :acc_false,
+                "MCD":mcd}
+    
+    def write(metric, cpt, type = 'train'):
         with summary_writer.as_default():
             for (k, v) in metric.items():
                 tf.summary.scalar(type+'/'+k,v, step=cpt)
@@ -225,8 +235,14 @@ with tf.device(comp_device) :
             metric_train = train(x)
 
             if ((cpt +1) % 100) == 0:
-                write(metric_train, "train")
-                
+                write(metric_train,tf.Variable(cpt,dtype=tf.int64),"train")
+            
+            if ((cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0):
+                print("test")
+                x = test_dataloader[cpt%len_test_dataloader]
+                metric_test = test(x)
+                write(metric_test,cpt, "test")
+
             if (cpt+1) % (10*len_train_dataloader) == 0:
                 print("rec audio", cpt)
                 rec_audios = create_audio()

@@ -360,7 +360,7 @@ class Encodeur_SAU(tf.keras.Model):
     ])
     """
     self.conv = tf.keras.models.Sequential([
-        
+        layers.InputLayer(input_shape=(80,1)),
         layers.Conv1D(4, 4, activation=act_conv),
         layers.MaxPool1D(pool_size=2),
         layers.BatchNormalization(),
@@ -390,6 +390,7 @@ class Decodeur_SAU(tf.keras.Model):
     super(Decodeur_SAU, self).__init__()
     act_conv = act.elu
     self.convT = tf.keras.models.Sequential([
+        layers.InputLayer(input_shape=(1, 128+64)),
         layers.UpSampling1D(size=2),
         layers.Conv1DTranspose(64, 3, activation=act_conv),
         layers.BatchNormalization(),
@@ -429,7 +430,7 @@ class Auto_Encodeur_SAU(Auto_Encodeur_rnn):
     phi : (b*lenght, 128)
     """
     phi    = tf.expand_dims(phi, axis=1) #(b*lenght, 1, 128)
-    latent = self.encodeur(x)#(b*lenght, 1, 128)
+    latent = self.encodeur(x)#(b, 1, 64)
     latent = tf.concat((phi,latent), axis = 2)
 
     out    = self.decodeur(latent)
@@ -438,12 +439,11 @@ class Auto_Encodeur_SAU(Auto_Encodeur_rnn):
 class Discriminateur_SAU(tf.keras.Model):
   def __init__(self):
     super(Discriminateur_SAU, self).__init__()
-    
     act_conv  = act.elu
     act_dense = act.elu
     self.conv = tf.keras.models.Sequential([
-        layers.Masking(mask_value=0.),
-        
+        layers.InputLayer(input_shape=(80,1)),
+
         layers.Conv1D(8, 4, activation=act_conv),
         layers.MaxPool1D(pool_size=4),
         layers.BatchNormalization(),
@@ -458,7 +458,7 @@ class Discriminateur_SAU(tf.keras.Model):
     ])
     self.H = tf.keras.models.Sequential([
       layers.Flatten(),
-      layers.Dense(30, activation=act_dense),
+      #layers.Dense(30, activation=act_dense),
       layers.Dense(1, activation=act.sigmoid),
     ])
 
