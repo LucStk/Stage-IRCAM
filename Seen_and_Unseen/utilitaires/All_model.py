@@ -435,9 +435,9 @@ class Auto_Encodeur_SAU(Auto_Encodeur_rnn):
     out    = self.decodeur(latent)
     return out
 
-class Discriminator_SAU(tf.keras.Model):
+class Discriminateur_SAU(tf.keras.Model):
   def __init__(self):
-    super(Discriminator_SAU, self).__init__()
+    super(Discriminateur_SAU, self).__init__()
     
     act_conv  = act.elu
     act_dense = act.elu
@@ -510,7 +510,7 @@ class SER(tf.keras.Model):
         layers.Conv2D(64, 5,activation=act_conv),
     ])
     self.bi_lstm = layers.Bidirectional(
-                            layers.GRU(64, 
+                            layers.GRU(32, 
                                         activation = act_rnn, 
                                         return_sequences=True,
                                         dropout=0.2))  
@@ -559,7 +559,6 @@ class little_SER(SER):
     super(little_SER, self).__init__()
     act_rnn  = act.elu
     act_conv = act.elu
-    act_dens = act.elu
 
     self.conv = tf.keras.models.Sequential([
         layers.Masking(mask_value=0.),
@@ -581,13 +580,9 @@ class little_SER(SER):
         
         layers.Conv2D(32, 5,activation=act_conv),
     ])
-    self.lstm_1  = layers.GRU(128, 
-                              activation = act_rnn, 
-                              return_sequences = True,
-                              dropout=0.2)
 
     self.bi_lstm = layers.Bidirectional(
-                            layers.GRU(32, 
+                            layers.GRU(64, 
                                         activation = act_rnn, 
                                         return_sequences=True,
                                         dropout=0.2))  
