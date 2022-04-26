@@ -510,7 +510,7 @@ class SER(tf.keras.Model):
         layers.Conv2D(64, 5,activation=act_conv),
     ])
     self.bi_lstm = layers.Bidirectional(
-                            layers.GRU(32, 
+                            layers.GRU(64, 
                                         activation = act_rnn, 
                                         return_sequences=True,
                                         dropout=0.2))  
@@ -537,7 +537,7 @@ class SER(tf.keras.Model):
     return x
   
   def call(self, x):
-    x = self.call_latent(x)
+    x = self.call(x)
     x = self.H(x)    
     return x
 
@@ -549,9 +549,9 @@ class SER(tf.keras.Model):
 
   def load_weights(self, file,  step = None):
     if step is None:
-      f = tf.train.latest_checkpoint(file+'/SER/')
+      f = tf.train.latest_checkpoint(file+'/SER_weights/')
     else:
-      f = file+'/SER/'+str(step)
+      f = file+'/SER_weights/'+str(step)
     super().load_weights(f)
 
 class little_SER(SER):

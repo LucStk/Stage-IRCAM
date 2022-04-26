@@ -70,13 +70,14 @@ with tf.device(comp_device) :
         decay_rate=0.9)
 
     ae_optim   = tf.keras.optimizers.RMSprop(learning_rate = lr_schedule)
+    #ae_optim   = tf.keras.mixed_precision.LossScaleOptimizer(ae_optim)
     
-    auto_encodeur  = Auto_Encodeur_SAU()
-    discriminateur = Discriminateur_SAU()
-    ser            = SER()
+    auto_encodeur = Auto_Encodeur_SAU()
+    #auto_encodeur.compile()
 
+    ser = SER()
     BCE = tf.keras.losses.BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
-    MSE = tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.NONE)
+    MSE = tf.keras.losses.MeanSquaredError()
     ################################################################
     #                         Loading Model                        #
     ################################################################
@@ -146,17 +147,17 @@ with tf.device(comp_device) :
         with tf.GradientTape() as tape_gen:
             out   = auto_encodeur(x, z)
             l_gen = MSE(x, out)
-
-
+            #l_gen = ae_optim.get_scaled_loss(l_gen)
 
         tr_var   = auto_encodeur.trainable_variables
         grad_gen = tape_gen.gradient(l_gen, tr_var)
+        #grad_gen = ae_optim.get_unscaled_gradients(grad_gen)
         ae_optim.apply_gradients(zip(grad_gen, tr_var))
-
-
         mcd   = MCD_1D(out, x)
         return {"loss_generateur": l_gen, "MCD":mcd}
 
+        
+    
     @tf.function
     def test(input):
         x = input[:,:80]
@@ -166,6 +167,7 @@ with tf.device(comp_device) :
         l_gen = MSE(x, out)
         mcd   = MCD_1D(out, x)
         return {"loss_generateur": l_gen, "MCD":mcd}
+
 
     @tf.function
     def write(metric, type = 'train'):
@@ -188,6 +190,8 @@ with tf.device(comp_device) :
 
         return ret
 
+
+                
     ###################################################################
     #                            Training                             #
     ###################################################################

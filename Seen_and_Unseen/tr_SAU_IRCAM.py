@@ -6,7 +6,7 @@ from utilitaires.utils import *
 import datetime
 import sys
 import getopt
-
+import numpy as np
 longoptions = ['lock=', 'load=', 'load_SER=', 'no_metrics=']
 ov, ra = getopt.getopt(sys.argv[1:], "", longoptions)
 ov = dict(ov)
@@ -55,8 +55,8 @@ SHUFFLE    = True
 LANGAGE    = "english"
 
 EPOCH = 100
-LR    = 1e-5
-LR_AE = 1e-4
+LR_AE   = 1e-3
+LR_DISC = 1e-4
 TEST_EPOCH = 1/2
 
 load_path     = ov.get('--load')
@@ -65,17 +65,19 @@ no_metrics    = ov.get('--no_metrics') == "true"
 
 with tf.device(comp_device) :
 
-    optim_disc = tf.keras.optimizers.Adam(learning_rate = LR)
-    ae_optim   = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
-    ae_optim = tf.keras.mixed_precision.LossScaleOptimizer(ae_optim)
-    
-    auto_encodeur = Auto_Encodeur_SAU()
-    discriminator = Discriminator_SAU()
-    #auto_encodeur.compile()
+    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+        initial_learning_rate=LR_AE,
+        decay_steps=10000,
+        decay_rate=0.9)
 
+    ae_optim = tf.keras.optimizers.RMSprop(learning_rate = lr_schedule)
+    
+    auto_encodeur  = Auto_Encodeur_SAU()
+    discriminateur = Discriminateur_SAU()
     ser = SER()
+
     BCE = tf.keras.losses.BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
-    MSE = tf.keras.losses.MeanSquaredError()
+    MSE = tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.NONE)
     ################################################################
     #                         Loading Model                        #
     ################################################################
@@ -89,6 +91,9 @@ with tf.device(comp_device) :
 
     if load_SER_path is not None:
         try:
+            #files = os.listdir(os.getcwd()+load_SER_path+"/SER_model")
+            #last  = np.max(np.int32(files))
+            #ser  = tf.keras.models.load_model(os.getcwd()+load_SER_path+'/'+str(last))
             ser.load_weights(os.getcwd()+load_SER_path)
             print('ser load sucessfuly')
         except:
@@ -109,14 +114,29 @@ with tf.device(comp_device) :
                                                   batch_size=BATCH_SIZE_TEST,
                                                   langage=LANGAGE,
                                                   type_='test')
-
     len_train_dataloader = len(train_dataloader)
     len_test_dataloader  = len(test_dataloader)
 
-    #Utilisation data_queue
+
+    #Création des summary
+    log_dir        = "logs/SAU_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    summary_writer = tf.summary.create_file_writer(log_dir)
+    
+    #Préparation enregistrement
+    audio_log_dir        = "logs/audio_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    audio_summary_writer = tf.summary.create_file_writer(audio_log_dir)
+    
+    #
+    mel_inv = Mel_inverter()
+    l_mean_latent_ser = mean_SER_emotion(FILEPATH, ser, 100)
+    echantillon       = emotion_echantillon(FILEPATH)
+
+
     if True:
         print("begin data_queue")
-        data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, use_multiprocessing=False, shuffle=True)
+        data_queue = tf.keras.utils.OrderedEnqueuer(train_dataloader, 
+                                                    use_multiprocessing=False, 
+                                                    shuffle=True)
         data_queue.start(4, 20)
         train_dataloader = data_queue.get()
 
@@ -127,49 +147,68 @@ with tf.device(comp_device) :
         x = input[:,:80]
         z = input[:,80:]
         x = normalisation(x)
+        # Apprentissage AE pour tromper le générateur
         with tf.GradientTape() as tape_gen:
-            out   = auto_encodeur(x, z)
-            l_gen = MSE(x, out)
-            l_gen = ae_optim.get_scaled_loss(l_gen)
+            out_ae  = auto_encodeur(x, z)
+            d_false = discriminateur(out_ae)
+            l_gen   = tf.math.reduce_mean(BCE(tf.ones_like(d_false), d_false))
+        
+        tr_var_ae   = auto_encodeur.trainable_variables
+        grad_gen = tape_gen.gradient(l_gen   , tr_var_ae)
+        
+        ae_optim.apply_gradients(zip(grad_gen, tr_var_ae))
 
-        tr_var   = auto_encodeur.trainable_variables
-        grad_gen = tape_gen.gradient(l_gen, tr_var)
-        grad_gen = ae_optim.get_unscaled_gradients(grad_gen)
-        ae_optim.apply_gradients(zip(grad_gen, tr_var))
+        # Apprentissage Discriminateur
+        with tf.GradientTape() as tape_disc:
+            d_true = discriminateur(x)
+            l_disc = tf.math.reduce_mean(BCE(tf.ones_like(d_true), d_true) + BCE(tf.zeros_like(d_false), d_false))
+        
+        tr_var_disc = discriminateur.trainable_variables
+        grad_disc   = tape_disc.gradient(l_disc, tr_var_disc)
+        ae_optim.apply_gradients(zip(grad_disc, tr_var_disc))
+        
+        mcd = MCD_1D(out_ae, x)
+        return {"loss_generateur": l_gen,"loss_generateur": l_disc, "MCD":mcd}
 
-        """
-        acc = (np.sum(d_true >= 0.5)+ np.sum(d_false < 0.5))/(2*len(d_false))
-        mdc = MDC_1D(out, x)
-        with summary_writer.as_default(): 
-            tf.summary.scalar('train/loss_generateur',l_gen, step=cpt)
-            tf.summary.scalar('train/loss_discriminateur',l_disc, step=cpt)
-            tf.summary.scalar('train/acc',acc , step=cpt)
-            tf.summary.scalar('train/mdc',mdc , step=cpt)
-        """
+    @tf.function
+    def test(input):
+        x = input[:,:80]
+        z = input[:,80:]
 
-    def test():
-        print("Test Time")
-        (x,z,y) = test_dataloader[cpt%len_test_dataloader]
-        x = normalisation(x)
-        out = auto_encodeur(x, z)
-        d_gen = discriminator(out)
-        l_gen = tf.reduce_mean(BCE(np.ones(d_gen.shape),d_gen))
+        out_ae  = auto_encodeur(x, z)
+        d_false = discriminateur(out_ae)
+        l_gen   = tf.math.reduce_mean(BCE(tf.ones_like(d_false), d_false))
+        
+        d_true = discriminateur(x)
+        l_disc = tf.math.reduce_mean(BCE(tf.ones_like(d_true), d_true) + BCE(tf.zeros_like(d_false), d_false))
 
-        d_true  = discriminator(x)
-        d_false = discriminator(tf.stop_gradient(out))
-        l_true  = tf.reduce_mean(BCE(np.ones(d_true.shape),d_true))
-        l_false = tf.reduce_mean(BCE(np.zeros(d_false.shape),d_false))
+        mcd = MCD_1D(out_ae, x)
+        return {"loss_generateur": l_gen,"loss_generateur": l_disc, "MCD":mcd}
 
-        acc = (np.sum(d_true >= 0.5)+ np.sum(d_false < 0.5))/(2*len(d_false))
-        mdc = MDC_1D(out, x)
-        with summary_writer.as_default(): 
-            tf.summary.scalar('test/loss_generateur',l_gen, step=cpt)
-            tf.summary.scalar('test/loss_discriminateur_true',l_true, step=cpt)
-            tf.summary.scalar('test/loss_discriminateur_false',l_false, step=cpt)
-            tf.summary.scalar('test/acc',acc , step=cpt)
-            tf.summary.scalar('test/mdc',mdc , step=cpt)
-    
+    @tf.function
+    def write(metric, type = 'train'):
+        with summary_writer.as_default():
+            for (k, v) in metric.items():
+                tf.summary.scalar(type+'/'+k,v, step=cpt)
 
+    def create_audio():
+        l_emotion = ['Angry','Happy', 'Neutral', 'Sad', 'Surprise']
+        with audio_summary_writer.as_default(): 
+            x = echantillon[2] # On ne prend que le neutre
+            rec_x   = mel_inv.convert(de_normalisation(x))
+            ret = {"Original": rec_x}
+            for i, emo in enumerate(l_emotion):
+                tmp = np.expand_dims(l_mean_latent_ser[i], axis = 0)
+                phi = np.repeat(tmp, x.shape[0], axis = 0)
+                out  = auto_encodeur(x, phi)
+                rec_out = mel_inv.convert(de_normalisation(out))
+                ret['Reconstruct '+emo] = rec_out
+
+        return ret
+
+    ###################################################################
+    #                            Training                             #
+    ###################################################################
     import contextlib
     @contextlib.contextmanager
     def options(options):
@@ -181,5 +220,16 @@ with tf.device(comp_device) :
             tf.config.optimizer.set_experimental_options(old_opts)
 
     with options({'constant_folding': True}):
+
         for cpt, x in enumerate(train_dataloader):
-            train(x)
+            metric_train = train(x)
+
+            if ((cpt +1) % 100) == 0:
+                write(metric_train, "train")
+                
+            if (cpt+1) % (10*len_train_dataloader) == 0:
+                print("rec audio", cpt)
+                rec_audios = create_audio()
+                with audio_summary_writer.as_default():
+                    for (k, v) in rec_audios.items():
+                        tf.summary.audio(k,v, 24000, step=cpt) 

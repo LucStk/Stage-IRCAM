@@ -97,7 +97,7 @@ with tf.device(comp_device) :
         y_ = tf.one_hot(y,5)
         x  = normalisation(x)
         with tf.GradientTape() as tape:
-            y_hat = ser(x)
+            y_hat = ser.call_all(x)
             l     = loss(y_,y_hat)
 
         tr_var    = ser.trainable_variables
@@ -113,7 +113,7 @@ with tf.device(comp_device) :
     def test(x,y):
         y_ = tf.one_hot(y,5)
         x  = normalisation(x)
-        y_hat = ser(x)
+        y_hat = ser.call_all(x)
         l     = loss(y_,y_hat)
         acc   = tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1,output_type=tf.dtypes.int32)), dtype= tf.float64))
         return {"loss_SER": l, "accurcay":acc}
