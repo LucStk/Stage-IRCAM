@@ -1,0 +1,29 @@
+import tensorflow as tf
+import tensorflow.keras.activations  as act
+import tensorflow.keras as ks
+import tensorflow.keras.layers as layers
+from tensorflow.keras import Model
+
+act_conv  = act.elu
+act_dense = act.elu
+conv = tf.keras.models.Sequential([
+    layers.Conv1D(4, 5, activation=act_conv),
+    layers.MaxPool1D(pool_size=2),
+    layers.BatchNormalization(),
+    layers.Dropout(.2),
+
+    layers.Conv1D(8, 5, activation=act_conv),
+    layers.MaxPool1D(pool_size=2),
+    layers.BatchNormalization(),
+    layers.Dropout(.2),
+    
+    layers.Conv1D(16, 5, activation=act_conv),
+    layers.MaxPool1D(pool_size=2),
+    layers.BatchNormalization(),
+    layers.Dropout(.2),
+
+    layers.Conv1D(32, 6, activation=act_conv),
+])
+
+x = tf.ones((10,80,1))
+conv(x).shape

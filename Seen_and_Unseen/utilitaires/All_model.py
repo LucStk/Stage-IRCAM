@@ -342,23 +342,6 @@ class Encodeur_SAU(tf.keras.Model):
   def __init__(self):
     super(Encodeur_SAU, self).__init__()
     act_conv = act.elu
-    """
-    self.conv = tf.keras.models.Sequential([
-        layers.Conv1D(8, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=2),
-        layers.BatchNormalization(),
-        
-        layers.Conv1D(16, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=2),
-        layers.BatchNormalization(),
-        
-        layers.Conv1D(32, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=3),
-        layers.BatchNormalization(),
-
-        layers.Conv1D(64, 4, activation=act_conv),
-    ])
-    """
     self.conv = tf.keras.models.Sequential([
         layers.InputLayer(input_shape=(80,1)),
         layers.Conv1D(4, 4, activation=act_conv),
@@ -378,11 +361,12 @@ class Encodeur_SAU(tf.keras.Model):
         
         layers.Conv1D(64, 2, activation=act_conv),
     ])
-
+    self.h_mean = layers.Dense(64)
+    self.h_std  = layers.Dense(64, activation=act.relu)
   def call(self, x):
     x = tf.expand_dims(x, axis = -1)
     x = self.conv(x)
-    return x
+    return self.h_mean(x), self.h_std(x)
     
 
 class Decodeur_SAU(tf.keras.Model):
@@ -429,12 +413,42 @@ class Auto_Encodeur_SAU(Auto_Encodeur_rnn):
     x   : (b*lenght, 128) non normalisé
     phi : (b*lenght, 128)
     """
-    phi    = tf.expand_dims(phi, axis=1) #(b*lenght, 1, 128)
-    latent = self.encodeur(x)#(b, 1, 64)
-    latent = tf.concat((phi,latent), axis = 2)
+    phi      = tf.expand_dims(phi, axis=1) #(b*lenght, 1, 128)
+    latent,_ = self.encodeur(x)#(b, 1, 64)
+    latent   = tf.concat((phi,latent), axis = 2)
 
     out    = self.decodeur(latent)
     return out
+
+class VAE_SAU(Auto_Encodeur_rnn):
+  def __init__(self):
+    super(VAE_SAU, self).__init__()
+    self.encodeur = Encodeur_SAU()
+    self.decodeur = Decodeur_SAU()
+
+  def call(self,x, phi):
+    """
+    x   : (b*lenght, 128) non normalisé
+    phi : (b*lenght, 128)
+    """
+    phi      = tf.expand_dims(phi, axis=1)
+    mean,logstd = self.encodeur(x)
+    latent   = tf.random.normal(mean.shape, mean=mean, stddev=logstd)
+    latent   = tf.concat((phi,latent), axis = 2)
+    out      = self.decodeur(latent)
+    return out, mean, logstd
+
+  def call_test(self,x, phi):
+    """
+    x   : (b*lenght, 128) non normalisé
+    phi : (b*lenght, 128)
+    """
+    phi      = tf.expand_dims(phi, axis=1)
+    latent,_ = self.encodeur(x)
+    latent   = tf.concat((phi,latent), axis = 2)
+    out      = self.decodeur(latent)
+    return out
+
 
 class Discriminateur_SAU(tf.keras.Model):
   def __init__(self):
@@ -442,20 +456,26 @@ class Discriminateur_SAU(tf.keras.Model):
     act_conv  = act.elu
     act_dense = act.elu
     self.conv = tf.keras.models.Sequential([
-        layers.InputLayer(input_shape=(80,1)),
+      layers.InputLayer(input_shape=(80,1)),
+      layers.Conv1D(4, 5, activation=act_conv),
+      layers.MaxPool1D(pool_size=2),
+      layers.BatchNormalization(),
+      layers.Dropout(.2),
 
-        layers.Conv1D(8, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=4),
-        layers.BatchNormalization(),
-        layers.Dropout(.2),
-        
-        layers.Conv1D(16, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=4),
-        layers.BatchNormalization(),
-        layers.Dropout(.2),
-        
-        layers.Conv1D(32, 4, activation=act_conv),
+      layers.Conv1D(8, 5, activation=act_conv),
+      layers.MaxPool1D(pool_size=2),
+      layers.BatchNormalization(),
+      layers.Dropout(.2),
+      
+      layers.Conv1D(16, 5, activation=act_conv),
+      layers.MaxPool1D(pool_size=2),
+      layers.BatchNormalization(),
+      layers.Dropout(.2),
+
+      layers.Conv1D(32, 6, activation=act_conv),
     ])
+
+
     self.H = tf.keras.models.Sequential([
       layers.Flatten(),
       #layers.Dense(30, activation=act_dense),

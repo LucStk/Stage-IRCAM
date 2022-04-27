@@ -6,7 +6,7 @@ from utilitaires.utils import *
 import datetime
 import sys
 import getopt
-import numpy as np
+
 longoptions = ['lock=', 'load=', 'load_SER=', 'no_metrics=']
 ov, ra = getopt.getopt(sys.argv[1:], "", longoptions)
 ov = dict(ov)
@@ -55,8 +55,7 @@ SHUFFLE    = True
 LANGAGE    = "english"
 
 EPOCH = 100
-LR_AE   = 1e-4
-LR_DISC = 1e-5
+LR_AE = 1e-2
 TEST_EPOCH = 1/2
 
 load_path     = ov.get('--load')
@@ -70,31 +69,32 @@ with tf.device(comp_device) :
         decay_steps=10000,
         decay_rate=0.9)
 
-    ae_optim   = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
-    disc_optim = tf.keras.optimizers.RMSprop(learning_rate = LR_DISC)
+    ae_optim   = tf.keras.optimizers.RMSprop(learning_rate = lr_schedule)
+    #ae_optim   = tf.keras.mixed_precision.LossScaleOptimizer(ae_optim)
+    
+    vae = VAE_SAU()
+    #vae.compile()
 
-    auto_encodeur  = Auto_Encodeur_SAU()
-    discriminateur = Discriminateur_SAU()
     ser = SER()
-
     BCE = tf.keras.losses.BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
-    MSE = tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.NONE)
+    MSE = tf.keras.losses.MeanSquaredError()
     ################################################################
     #                         Loading Model                        #
     ################################################################
 
+    def VAE_loss(x,x_hat, mean, std, eps = 1e-4):
+        return -0.5*tf.reduce_sum(1+ tf.math.log(std+eps) - std - mean**2) + MSE(x,x_hat)
+
+
     if load_path is not None :
         try:
-            auto_encodeur.load_weights(os.getcwd()+load_path)
-            print('auto_encodeur load sucessfuly')
+            vae.load_weights(os.getcwd()+load_path)
+            print('vae load sucessfuly')
         except:
-            print("auto_encodeur not load succesfully from"+os.getcwd()+load_path)
+            print("vae not load succesfully from"+os.getcwd()+load_path)
 
     if load_SER_path is not None:
         try:
-            #files = os.listdir(os.getcwd()+load_SER_path+"/SER_model")
-            #last  = np.max(np.int32(files))
-            #ser  = tf.keras.models.load_model(os.getcwd()+load_SER_path+'/'+str(last))
             ser.load_weights(os.getcwd()+load_SER_path)
             print('ser load sucessfuly')
         except:
@@ -120,11 +120,11 @@ with tf.device(comp_device) :
 
 
     #Création des summary
-    log_dir        = "logs/SAU_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_dir        = "logs/VAE_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     summary_writer = tf.summary.create_file_writer(log_dir)
     
     #Préparation enregistrement
-    audio_log_dir        = "logs/audio_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    audio_log_dir        = "logs/audio_logs/VAE" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     audio_summary_writer = tf.summary.create_file_writer(audio_log_dir)
     
     #
@@ -143,75 +143,32 @@ with tf.device(comp_device) :
 
     print("Every thing ready, beging training")
 
-
     @tf.function(jit_compile=True)
     def train(input):
         x = input[:,:80]
         z = input[:,80:]
         x = normalisation(x)
-        # Apprentissage AE pour tromper le générateur
-        
-        with tf.GradientTape() as tape_gen,tf.GradientTape() as tape_disc:
-            out_ae  = auto_encodeur(x, z)
-            d_false = discriminateur(out_ae)
-            l_gen   = tf.math.reduce_mean(BCE(tf.ones_like(d_false), d_false))
-
-            d_true  = discriminateur(x)
-            l_disc  = tf.math.reduce_mean(BCE(tf.ones_like(d_true), d_true) +\
-                                          BCE(tf.zeros_like(d_false), d_false))
-
-        tr_var_ae = auto_encodeur.trainable_variables
-        grad_gen  = tape_gen.gradient(l_gen  , tr_var_ae)
-        ae_optim.apply_gradients(zip(grad_gen, tr_var_ae))
-        
-        tr_var_disc = discriminateur.trainable_variables
-        grad_disc   = tape_disc.gradient(l_disc, tr_var_disc)
-        disc_optim.apply_gradients(zip(grad_disc, tr_var_disc))
-        
-        mcd = MCD_1D(out_ae, x)
-        return {"loss_generateur": l_gen,"loss_discriminateur": l_disc, "MCD":mcd}
-    
-    @tf.function(jit_compile=True)
-    def train_AE(input):
-        x = input[:,:80]
-        z = input[:,80:]
-        x = normalisation(x)
         with tf.GradientTape() as tape_gen:
-            out  = auto_encodeur(x, z)
-            l_ae = tf.math.reduce_mean(MSE(x, out))
+            out, mean, logstd  = vae(x, z)
+            l_gen = VAE_loss(x, out, mean, logstd)
 
-        tr_var   = auto_encodeur.trainable_variables
-        grad_gen = tape_gen.gradient(l_ae, tr_var)
+        tr_var   = vae.trainable_variables
+        grad_gen = tape_gen.gradient(l_gen, tr_var)
+        #grad_gen = ae_optim.get_unscaled_gradients(grad_gen)
         ae_optim.apply_gradients(zip(grad_gen, tr_var))
         mcd   = MCD_1D(out, x)
-        return {"loss_AE": l_ae, "MCD":mcd}
-
-
+        return {"loss_generateur": l_gen, "MCD":mcd}        
+    
     @tf.function(jit_compile=True)
     def test(input):
         x = input[:,:80]
         z = input[:,80:]
+        x = normalisation(x)
+        out, mean,std = vae(x, z)
+        l_gen = VAE_loss(x, out, mean, std)
+        mcd   = MCD_1D(out, x)
+        return {"loss_generateur": l_gen, "MCD":mcd}
 
-        out_ae  = auto_encodeur(x, z)
-        d_false = discriminateur(out_ae)
-        l_gen   = tf.math.reduce_mean(BCE(tf.ones_like(d_false), d_false))
-        
-        
-        d_true = discriminateur(x)
-
-        acc_true  = tf.reduce_mean(tf.cast(d_true > 0.5, dtype = tf.int32))
-        acc_false = tf.reduce_mean(tf.cast(d_false < 0.5, dtype = tf.int32))
-
-        l_disc = tf.math.reduce_mean(BCE(tf.ones_like(d_true), d_true)+\
-                                     BCE(tf.zeros_like(d_false), d_false))
-
-        mcd = MCD_1D(out_ae, x)
-        return {"loss_generateur": l_gen,
-                "loss_discriminateur": l_disc, 
-                "acc_true_discriminateur" :acc_true,
-                "acc_false_discriminateur" :acc_false,
-                "MCD":mcd}
-    
     def write(metric, cpt, type = 'train'):
         with summary_writer.as_default():
             for (k, v) in metric.items():
@@ -220,13 +177,13 @@ with tf.device(comp_device) :
     def create_audio():
         l_emotion = ['Angry','Happy', 'Neutral', 'Sad', 'Surprise']
         with audio_summary_writer.as_default(): 
-            x = echantillon[2] # On ne prend que le neutre
-            rec_x   = mel_inv.convert(de_normalisation(x))
-            ret = {"Original": rec_x}
+            x     = echantillon[2] # On ne prend que le neutre
+            rec_x = mel_inv.convert(de_normalisation(x))
+            ret   = {"Original": rec_x}
             for i, emo in enumerate(l_emotion):
                 tmp = np.expand_dims(l_mean_latent_ser[i], axis = 0)
                 phi = np.repeat(tmp, x.shape[0], axis = 0)
-                out  = auto_encodeur(x, phi)
+                out = vae.call_test(x, phi)
                 rec_out = mel_inv.convert(de_normalisation(out))
                 ret['Reconstruct '+emo] = rec_out
 
@@ -249,18 +206,16 @@ with tf.device(comp_device) :
 
         for cpt, x in enumerate(train_dataloader):
             metric_train = train(x)
-            if cpt < 100000:
-                train_AE(x)
 
-            if ((cpt +1) % 200) == 0:
+            if ((cpt +1) % 100) == 0:
                 write(metric_train,tf.Variable(cpt,dtype=tf.int64),"train")
-            
-            if ((cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0):
-                print("test")
-                x = test_dataloader[cpt%len_test_dataloader]
-                metric_test = test(x)
-                write(metric_test,cpt, "test")
 
+            if (cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
+                print("Test Time", cpt)
+                input = test_dataloader[cpt%len_test_dataloader]
+                metric_test = test(input)
+                write(metric_test, cpt, "test")
+                
             if (cpt+1) % (10*len_train_dataloader) == 0:
                 print("rec audio", cpt)
                 rec_audios = create_audio()

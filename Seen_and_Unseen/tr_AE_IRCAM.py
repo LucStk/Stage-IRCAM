@@ -120,7 +120,7 @@ with tf.device(comp_device) :
     summary_writer = tf.summary.create_file_writer(log_dir)
     
     #Préparation enregistrement
-    audio_log_dir        = "logs/audio_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    audio_log_dir        = "logs/audio_logs/AE" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     audio_summary_writer = tf.summary.create_file_writer(audio_log_dir)
     
     #
@@ -139,7 +139,7 @@ with tf.device(comp_device) :
 
     print("Every thing ready, beging training")
 
-    @tf.function
+    #@tf.function(jit_compile=True)
     def train(input):
         x = input[:,:80]
         z = input[:,80:]
@@ -154,11 +154,9 @@ with tf.device(comp_device) :
         #grad_gen = ae_optim.get_unscaled_gradients(grad_gen)
         ae_optim.apply_gradients(zip(grad_gen, tr_var))
         mcd   = MCD_1D(out, x)
-        return {"loss_generateur": l_gen, "MCD":mcd}
-
-        
+        return {"loss_generateur": l_gen, "MCD":mcd}        
     
-    @tf.function
+    @tf.function(jit_compile=True)
     def test(input):
         x = input[:,:80]
         z = input[:,80:]
@@ -169,8 +167,7 @@ with tf.device(comp_device) :
         return {"loss_generateur": l_gen, "MCD":mcd}
 
 
-    @tf.function
-    def write(metric, type = 'train'):
+    def write(metric, cpt, type = 'train'):
         with summary_writer.as_default():
             for (k, v) in metric.items():
                 tf.summary.scalar(type+'/'+k,v, step=cpt)
@@ -211,13 +208,13 @@ with tf.device(comp_device) :
             metric_train = train(x)
 
             if ((cpt +1) % 100) == 0:
-                write(metric_train, "train")
+                write(metric_train,tf.Variable(cpt,dtype=tf.int64), "train")
 
             if (cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
                 print("Test Time", cpt)
                 input = test_dataloader[cpt%len_test_dataloader]
                 metric_test = test(input)
-                write(metric_test, "test")
+                write(metric_test,cpt, "test")
                 
             if (cpt+1) % (10*len_train_dataloader) == 0:
                 print("rec audio", cpt)
