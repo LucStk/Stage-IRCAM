@@ -341,7 +341,7 @@ IMPLEMENTATION Papier Seen and Unseen
 class Encodeur_SAU(tf.keras.Model):
   def __init__(self):
     super(Encodeur_SAU, self).__init__()
-    act_conv = act.elu
+    act_conv = act.swish
     self.conv = tf.keras.models.Sequential([
         layers.InputLayer(input_shape=(80,1)),
         layers.Conv1D(4, 4, activation=act_conv),
@@ -359,20 +359,25 @@ class Encodeur_SAU(tf.keras.Model):
         layers.Conv1D(32, 4, activation=act_conv),
         layers.MaxPool1D(pool_size=2),
         
-        layers.Conv1D(64, 2, activation=act_conv),
+        layers.Conv1D(64, 2, activation=act_conv),        
     ])
     self.h_mean = layers.Dense(64)
-    self.h_std  = layers.Dense(64, activation=act.relu)
+    self.h_std  = layers.Dense(64, act.tanh)
+
+
+
   def call(self, x):
     x = tf.expand_dims(x, axis = -1)
     x = self.conv(x)
-    return self.h_mean(x), self.h_std(x)
+    mean = self.h_mean(x)
+    std  = self.h_std(x)*2
+    return mean, std 
     
 
 class Decodeur_SAU(tf.keras.Model):
   def __init__(self):
     super(Decodeur_SAU, self).__init__()
-    act_conv = act.elu
+    act_conv = act.swish
     self.convT = tf.keras.models.Sequential([
         layers.InputLayer(input_shape=(1, 128+64)),
         layers.UpSampling1D(size=2),
@@ -433,7 +438,7 @@ class VAE_SAU(Auto_Encodeur_rnn):
     """
     phi      = tf.expand_dims(phi, axis=1)
     mean,logstd = self.encodeur(x)
-    latent   = tf.random.normal(mean.shape, mean=mean, stddev=logstd)
+    latent   = tf.random.normal(mean.shape, mean=mean, stddev=tf.math.exp(logstd))
     latent   = tf.concat((phi,latent), axis = 2)
     out      = self.decodeur(latent)
     return out, mean, logstd

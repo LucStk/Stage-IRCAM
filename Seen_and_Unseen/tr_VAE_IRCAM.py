@@ -54,8 +54,8 @@ BATCH_SIZE_TEST  = 100
 SHUFFLE    = True
 LANGAGE    = "english"
 
-EPOCH = 100
-LR_AE = 1e-2
+EPOCH = 256
+LR_AE = 1e-3
 TEST_EPOCH = 1/2
 
 load_path     = ov.get('--load')
@@ -69,7 +69,7 @@ with tf.device(comp_device) :
         decay_steps=10000,
         decay_rate=0.9)
 
-    ae_optim   = tf.keras.optimizers.RMSprop(learning_rate = lr_schedule)
+    ae_optim  = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
     #ae_optim   = tf.keras.mixed_precision.LossScaleOptimizer(ae_optim)
     
     vae = VAE_SAU()
@@ -77,13 +77,14 @@ with tf.device(comp_device) :
 
     ser = SER()
     BCE = tf.keras.losses.BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
-    MSE = tf.keras.losses.MeanSquaredError()
+    MSE = tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.NONE)
     ################################################################
     #                         Loading Model                        #
     ################################################################
 
-    def VAE_loss(x,x_hat, mean, std, eps = 1e-4):
-        return -0.5*tf.reduce_sum(1+ tf.math.log(std+eps) - std - mean**2) + MSE(x,x_hat)
+    def VAE_loss(x,x_hat, mean, std):
+        KL = -0.5*tf.reduce_sum(1+ std - tf.math.exp(std) - mean**2)
+        return  tf.reduce_mean(MSE(x,x_hat) + KL)
 
 
     if load_path is not None :
@@ -154,8 +155,8 @@ with tf.device(comp_device) :
 
         tr_var   = vae.trainable_variables
         grad_gen = tape_gen.gradient(l_gen, tr_var)
-        #grad_gen = ae_optim.get_unscaled_gradients(grad_gen)
         ae_optim.apply_gradients(zip(grad_gen, tr_var))
+
         mcd   = MCD_1D(out, x)
         return {"loss_generateur": l_gen, "MCD":mcd}        
     

@@ -6,24 +6,25 @@ from tensorflow.keras import Model
 
 act_conv  = act.elu
 act_dense = act.elu
+
 conv = tf.keras.models.Sequential([
-    layers.Conv1D(4, 5, activation=act_conv),
-    layers.MaxPool1D(pool_size=2),
-    layers.BatchNormalization(),
-    layers.Dropout(.2),
+        layers.InputLayer(input_shape=(80,1)),
+        layers.Conv1D(4, 4, activation=act_conv),
+        layers.MaxPool1D(pool_size=2),
+        layers.BatchNormalization(),
+        
+        layers.Conv1D(8, 4, activation=act_conv),
+        layers.MaxPool1D(pool_size=2),
+        layers.BatchNormalization(),
+        
+        layers.Conv1D(16, 4, activation=act_conv),
+        layers.MaxPool1D(pool_size=2),
+        layers.BatchNormalization(),
 
-    layers.Conv1D(8, 5, activation=act_conv),
-    layers.MaxPool1D(pool_size=2),
-    layers.BatchNormalization(),
-    layers.Dropout(.2),
-    
-    layers.Conv1D(16, 5, activation=act_conv),
-    layers.MaxPool1D(pool_size=2),
-    layers.BatchNormalization(),
-    layers.Dropout(.2),
-
-    layers.Conv1D(32, 6, activation=act_conv),
-])
-
+        layers.Conv1D(32, 4, activation=act_conv),
+        layers.MaxPool1D(pool_size=2),
+        
+        layers.Conv1D(64, 2, activation=act_conv),        
+    ])
 x = tf.ones((10,80,1))
 conv(x).shape
