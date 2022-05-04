@@ -351,14 +351,3 @@ class ESD_batch_data_generator(Sequence):
 
     def __getitem__(self, idx):
         return self.getitem_pure(idx)
-
-if __name__ == "__main__":
-    FILEPATH = r"/home/luc/Documents/STAGE_IRCAM/data/ESD_Mel/"
-    #base = ESD_data_generator(FILEPATH, batch_size=10, shuffle=True, langage="english")
-    #base_test = ESD_data_generator(FILEPATH, batch_size=10, shuffle=True,type_="test", langage="english")
-    base = ESD_batch_data_generator(FILEPATH, batch_size=5, batch_size_2=10, shuffle=True, langage="english")
-    x = base[0]
-    print("ok")
-    #x = base[0][0]
-    #print(len(base))
-

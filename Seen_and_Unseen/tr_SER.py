@@ -9,7 +9,7 @@ import sys
 import numpy as np
 import getopt
     
-longoptions = ['lock=', 'load=']
+longoptions = ['lock=', 'load=','name=']
 ov, ra = getopt.getopt(sys.argv[1:], "", longoptions)
 ov = dict(ov)
 
@@ -52,18 +52,22 @@ except:
             raise Exception('Data not found')
 
 
-BATCH_SIZE_TRAIN = 56
+BATCH_SIZE_TRAIN = 256
 BATCH_SIZE_TEST  = 200
 SHUFFLE    = True
 LANGAGE    = "english"
 USE_DATA_QUEUE = True
-LR = 1e-5
+LR = 1e-3
 TEST_EPOCH = 1/2
 load_path = ov.get('--load')
 
 with tf.device(comp_device) :
     ser    = SER()
-    #optimizer = tf.keras.optimizers.Adam(learning_rate = LR)
+    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+        initial_learning_rate=LR,
+        decay_steps=20000,
+        decay_rate=0.9)
+
     optimizer = tf.keras.optimizers.RMSprop(learning_rate = LR)
     loss      = tf.keras.losses.BinaryCrossentropy(from_logits = True)
 
@@ -87,17 +91,17 @@ with tf.device(comp_device) :
         data_queue.start(workers = 4, max_queue_size=20)
         train_dataloader = data_queue.get()
 
-    log_dir        = "logs/SER_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_dir        = "logs/SER_logs/"+ov.get("--name") + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     summary_writer = tf.summary.create_file_writer(log_dir)
 
 
     print("Training Beging")
-    @tf.function(experimental_relax_shapes=True)
+    @tf.function(experimental_relax_shapes=True) #, jit_compile=True)
     def train(x,y):
         y_ = tf.one_hot(y,5)
         x  = normalisation(x)
         with tf.GradientTape() as tape:
-            y_hat = ser.call_all(x)
+            y_hat = ser.call_clas(x)
             l     = loss(y_,y_hat)
 
         tr_var    = ser.trainable_variables
@@ -109,11 +113,11 @@ with tf.device(comp_device) :
 
 
 
-    @tf.function(experimental_relax_shapes=True)
+    @tf.function(experimental_relax_shapes=True)#,jit_compile=True)
     def test(x,y):
         y_ = tf.one_hot(y,5)
         x  = normalisation(x)
-        y_hat = ser.call_all(x)
+        y_hat = ser.call_clas(x)
         l     = loss(y_,y_hat)
         acc   = tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1,output_type=tf.dtypes.int32)), dtype= tf.float64))
         return {"loss_SER": l, "accurcay":acc}
@@ -131,12 +135,12 @@ with tf.device(comp_device) :
             
         if ((cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0):
             print("test")
-            (x,y) = test_dataloader[cpt%len_test_dataloader]
+            (x,y) = test_dataloader[tf.cast(tf.math.floor(tf.random.uniform([1])[0]*len_test_dataloader), dtype = tf.int32)]
             metric_test = test(x,y)
             write(metric_test, "test")
 
         if (cpt+1) % (50*len_train_dataloader) == 0:
             print("save")
-            ser.save(log_dir, format(cpt//len_train_dataloader))
+            #ser.save(log_dir, format(cpt//len_train_dataloader))
             ser.save_weights(log_dir, format(cpt//len_train_dataloader))
 

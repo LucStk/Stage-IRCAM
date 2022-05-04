@@ -341,29 +341,26 @@ IMPLEMENTATION Papier Seen and Unseen
 class Encodeur_SAU(tf.keras.Model):
   def __init__(self):
     super(Encodeur_SAU, self).__init__()
-    act_conv = act.swish
+    act_conv  = act.elu # act.swish
     self.conv = tf.keras.models.Sequential([
         layers.InputLayer(input_shape=(80,1)),
-        layers.Conv1D(4, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=2),
-        layers.BatchNormalization(),
-        
-        layers.Conv1D(8, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=2),
-        layers.BatchNormalization(),
-        
         layers.Conv1D(16, 4, activation=act_conv),
         layers.MaxPool1D(pool_size=2),
         layers.BatchNormalization(),
-
+        
         layers.Conv1D(32, 4, activation=act_conv),
         layers.MaxPool1D(pool_size=2),
+        layers.BatchNormalization(),
         
-        layers.Conv1D(64, 2, activation=act_conv),        
-    ])
-    self.h_mean = layers.Dense(64)
-    self.h_std  = layers.Dense(64, act.tanh)
+        layers.Conv1D(64, 4, activation=act_conv),
+        layers.MaxPool1D(pool_size=2),
+        layers.BatchNormalization(),
 
+        layers.Conv1D(128, 4, activation=act_conv),
+        layers.MaxPool1D(pool_size=2),
+    ])
+    self.h_mean = layers.Conv1D(32, 2, activation=act_conv)
+    self.h_std  = layers.Conv1D(32, 2, activation=act.tanh)
 
 
   def call(self, x):
@@ -377,9 +374,9 @@ class Encodeur_SAU(tf.keras.Model):
 class Decodeur_SAU(tf.keras.Model):
   def __init__(self):
     super(Decodeur_SAU, self).__init__()
-    act_conv = act.swish
+    act_conv   = act.elu # act.swish
     self.convT = tf.keras.models.Sequential([
-        layers.InputLayer(input_shape=(1, 128+64)),
+        layers.InputLayer(input_shape=(1, 16+32)),
         layers.UpSampling1D(size=2),
         layers.Conv1DTranspose(64, 3, activation=act_conv),
         layers.BatchNormalization(),
@@ -398,6 +395,7 @@ class Decodeur_SAU(tf.keras.Model):
 
         layers.Conv1DTranspose(1, 4, activation=act_conv),
     ])
+
   def call(self, x):
     """
     Génére une sortie de taille size à partir d'un espace latent (batch, latent_size)
@@ -418,8 +416,8 @@ class Auto_Encodeur_SAU(Auto_Encodeur_rnn):
     x   : (b*lenght, 128) non normalisé
     phi : (b*lenght, 128)
     """
-    phi      = tf.expand_dims(phi, axis=1) #(b*lenght, 1, 128)
-    latent,_ = self.encodeur(x)#(b, 1, 64)
+    phi      = tf.expand_dims(phi, axis=1)
+    latent,_ = self.encodeur(x)
     latent   = tf.concat((phi,latent), axis = 2)
 
     out    = self.decodeur(latent)
@@ -512,33 +510,28 @@ class SER(tf.keras.Model):
   def __init__(self):
     super(SER, self).__init__()
     act_rnn  = act.tanh
-    act_conv = act.elu
+    act_conv = act.swish
 
     self.conv = tf.keras.models.Sequential([
         layers.Masking(mask_value=0.),
 
-        layers.Conv2D(8, 5, activation=act_conv),
-        layers.MaxPool2D(pool_size=2),
+        layers.Conv2D(32, 4, activation=act_conv),
+        layers.MaxPool2D(pool_size=4),
         layers.BatchNormalization(),
-        layers.Dropout(.2),
+        layers.Dropout(.3),
 
-        layers.Conv2D(16, 5, activation=act_conv),
-        layers.MaxPool2D(pool_size=2),
+        layers.Conv2D(64, 4, activation=act_conv),
+        layers.MaxPool2D(pool_size=4),
         layers.BatchNormalization(),
-        layers.Dropout(.2),
+        layers.Dropout(.3),
         
-        layers.Conv2D(32, 5, activation=act_conv),
-        layers.MaxPool2D(pool_size=2),
-        layers.BatchNormalization(),
-        layers.Dropout(.2),
-        
-        layers.Conv2D(64, 5,activation=act_conv),
+        layers.Conv2D(128, 4, activation=act_conv),
     ])
     self.bi_lstm = layers.Bidirectional(
-                            layers.GRU(64, 
+                            layers.GRU(8,
                                         activation = act_rnn, 
                                         return_sequences=True,
-                                        dropout=0.2))  
+                                        dropout=0.3))  
  
     self.W = layers.Dense(1)
     self.H = tf.keras.models.Sequential([
@@ -561,8 +554,8 @@ class SER(tf.keras.Model):
     x     = tf.math.reduce_sum(tf.math.multiply(x,alpha), axis = 1)  
     return x
   
-  def call(self, x):
-    x = self.call(x)
+  def call_clas(self, x):
+    x = self.call_latent(x)
     x = self.H(x)    
     return x
 
@@ -579,39 +572,144 @@ class SER(tf.keras.Model):
       f = file+'/SER_weights/'+str(step)
     super().load_weights(f)
 
-class little_SER(SER):
+#################################################################
+#                         Domaine séparation                    #
+# ###############################################################
+class generateur_DS(tf.keras.Model):
   def __init__(self):
-    super(little_SER, self).__init__()
-    act_rnn  = act.elu
-    act_conv = act.elu
+    super(generateur_DS, self).__init__()
+    act_conv   = act.elu # act.swish
+    self.convT = tf.keras.models.Sequential([
+        layers.InputLayer(input_shape=(1, 16+80)),
+        layers.Dropout(0.2),
 
-    self.conv = tf.keras.models.Sequential([
-        layers.Masking(mask_value=0.),
+        layers.UpSampling1D(size=5),
+        layers.Conv1DTranspose(32, 4, activation=act_conv),
+        layers.BatchNormalization(),
+        layers.Dropout(0.2),
 
-        layers.Conv2D(4, 5, activation=act_conv),
-        layers.MaxPool2D(pool_size=2),
+        layers.UpSampling1D(size=4),
+        layers.Conv1DTranspose(16, 5, activation=act_conv),
         layers.BatchNormalization(),
-        layers.Dropout(.2),
 
-        layers.Conv2D(8, 5, activation=act_conv),
-        layers.MaxPool2D(pool_size=2),
+        layers.UpSampling1D(size=2),
+        layers.Conv1DTranspose(8, 5, activation=act_conv),
         layers.BatchNormalization(),
-        layers.Dropout(.2),
-        
-        layers.Conv2D(16, 5, activation=act_conv),
-        layers.MaxPool2D(pool_size=2),
-        layers.BatchNormalization(),
-        layers.Dropout(.2),
-        
-        layers.Conv2D(32, 5,activation=act_conv),
+
+        layers.Conv1DTranspose(1, 5, activation=act_conv),
     ])
 
-    self.bi_lstm = layers.Bidirectional(
-                            layers.GRU(64, 
-                                        activation = act_rnn, 
-                                        return_sequences=True,
-                                        dropout=0.2))  
- 
-    self.W = layers.Dense(1)
-    self.H = tf.keras.models.Sequential([
-      layers.Dense(5),])
+  def call(self, x,phi):
+    """
+    Génére une sortie de taille size à partir d'un espace latent (batch, latent_size)
+    """
+    phi = tf.expand_dims(phi, axis = 1)
+    x   = tf.expand_dims(x,   axis = 1)
+    x   = tf.concat((phi,x), axis = 2)
+
+    x   = self.convT(x)
+    x   = tf.squeeze(x)
+    x   = tf.math.sigmoid(x)*(MAX_normalised-MIN_normalised)+MIN_normalised
+    return x
+
+  def save_weights(self, file, step):
+    super.save_weights(file+'/gen_DS_checkpoint/'+str(step))
+
+
+  def load_weights(self, file,  step = None):
+    if step is None:
+      f_enco = tf.train.latest_checkpoint(file+'/gen_DS_checkpoint')
+    else:
+      f_enco = file+'/gen_DS_checkpoint/'+str(step)
+
+    super.load_weights(f_enco)
+
+
+class latent_DS(tf.keras.Model):
+  def __init__(self):
+    super(generateur_DS, self).__init__()
+    act_conv   = act.elu # act.swish
+    self.convT = tf.keras.models.Sequential([
+        layers.InputLayer(input_shape=(1, 80)),
+        layers.Dropout(0.2),
+
+        layers.UpSampling1D(size=5),
+        layers.Conv1DTranspose(32, 4, activation=act_conv),
+        layers.BatchNormalization(),
+        layers.Dropout(0.2),
+
+        layers.UpSampling1D(size=4),
+        layers.Conv1DTranspose(16, 5, activation=act_conv),
+        layers.BatchNormalization(),
+
+        layers.UpSampling1D(size=2),
+        layers.Conv1DTranspose(8, 5, activation=act_conv),
+        layers.BatchNormalization(),
+
+        layers.Conv1DTranspose(1, 5, activation=act_conv),
+    ])
+
+  def call(self, x):
+    """
+    Génére une sortie de taille size à partir d'un espace latent (batch, latent_size)
+    """
+    x   = tf.expand_dims(x,   axis = 1)
+    x   = self.convT(x)
+    x   = tf.squeeze(x)
+    x   = tf.math.sigmoid(x)*(MAX_normalised-MIN_normalised)+MIN_normalised
+    return x
+
+  def save_weights(self, file, step):
+    super.save_weights(file+'/latent_DS_checkpoint/'+str(step))
+
+
+  def load_weights(self, file,  step = None):
+    if step is None:
+      f_enco = tf.train.latest_checkpoint(file+'/latent_DS_checkpoint')
+    else:
+      f_enco = file+'/latent_DS_checkpoint/'+str(step)
+
+    super.load_weights(f_enco)
+
+
+class discriminateur_DS(tf.keras.Model):
+  def __init__(self):
+    super(generateur_DS, self).__init__()
+    act_conv   = act.elu # act.swish
+    self.convT = tf.keras.models.Sequential([
+        layers.InputLayer(input_shape=(1, 80)),
+        
+        layers.UpSampling1D(size=2),
+        layers.Conv1DTranspose(32, 2, activation=act_conv),
+        layers.BatchNormalization(),
+
+        layers.UpSampling1D(size=2),
+        layers.Conv1DTranspose(16, 2, activation=act_conv),
+        layers.BatchNormalization(),
+
+        layers.UpSampling1D(size=2),
+        layers.Conv1DTranspose(1, 3, activation=act_conv),
+        layers.BatchNormalization(),
+    ])
+
+  def call(self, x):
+    """
+    Génére une sortie de taille size à partir d'un espace latent (batch, latent_size)
+    """
+    x   = tf.expand_dims(x,   axis = 1)
+    x   = self.convT(x)
+    x   = tf.squeeze(x)
+    x   = tf.math.sigmoid(x)*(MAX_normalised-MIN_normalised)+MIN_normalised
+    return x
+
+  def save_weights(self, file, step):
+    super.save_weights(file+'/disc_DS_checkpoint/'+str(step))
+
+
+  def load_weights(self, file,  step = None):
+    if step is None:
+      f_enco = tf.train.latest_checkpoint(file+'/disc_DS_checkpoint')
+    else:
+      f_enco = file+'/disc_DS_checkpoint/'+str(step)
+
+    super.load_weights(f_enco)

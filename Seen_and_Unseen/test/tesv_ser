@@ -1,0 +1,37 @@
+import tensorflow as tf
+import numpy as np
+#from utilitaires.All_model import *
+import tensorflow.keras.activations  as act
+import tensorflow.keras as ks
+import tensorflow.keras.layers as layers
+
+from tensorflow.compat.v1 import ConfigProto
+from tensorflow.compat.v1 import InteractiveSession
+import os
+MEAN_DATASET = -6.0056405
+STD_DATASET  = 2.4420118
+config = ConfigProto()
+config.gpu_options.allow_growth = True
+session = InteractiveSession(config=config)
+
+act_conv  = act.elu
+act_dense = act.elu
+
+conv = tf.keras.models.Sequential([
+        layers.Masking(mask_value=0.),
+
+        layers.Conv2D(8, 4, activation=act_conv),
+        layers.MaxPool2D(pool_size=4),
+        layers.BatchNormalization(),
+        layers.Dropout(.2),
+
+        layers.Conv2D(16, 4, activation=act_conv),
+        layers.MaxPool2D(pool_size=4),
+        layers.BatchNormalization(),
+        layers.Dropout(.2),
+        
+        layers.Conv2D(32, 4, activation=act_conv),
+    ])
+x = tf.ones((10,100,80,1))
+
+print(conv(x).shape)

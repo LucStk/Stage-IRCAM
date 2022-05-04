@@ -50,13 +50,14 @@ except:
         except:
             raise Exception('Data not found')
 
-BATCH_SIZE_TRAIN = 156
+BATCH_SIZE_TRAIN = 26
 BATCH_SIZE_TEST  = 100
 SHUFFLE    = True
 LANGAGE    = "english"
 
-EPOCH = 100
-LR_AE = 1e-3
+EPOCH   = 100
+LR_GEN  = 1e-4
+LR_DISC = 1e-4
 TEST_EPOCH = 1/2
 
 load_path     = ov.get('--load')
@@ -70,11 +71,12 @@ with tf.device(comp_device) :
         decay_steps=10000,
         decay_rate=0.9)
 
-    ae_optim   = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
-    #ae_optim   = tf.keras.mixed_precision.LossScaleOptimizer(ae_optim)
+    gen_optim   = tf.keras.optimizers.RMSprop(learning_rate = LR_GEN)
+    disc_optim  = tf.keras.optimizers.RMSprop(learning_rate = LR_DISC)
     
-    auto_encodeur = Auto_Encodeur_SAU() #generateur_SAU()
-    #auto_encodeur.compile()
+    gen_latent = latent_DS() #generateur_SAU()
+    gen        = generateur_DS()
+    disc       = discriminateur_DS()
 
     ser = SER()
     BCE = tf.keras.losses.BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
@@ -82,13 +84,6 @@ with tf.device(comp_device) :
     ################################################################
     #                         Loading Model                        #
     ################################################################
-
-    if load_path is not None :
-        try:
-            auto_encodeur.load_weights(os.getcwd()+load_path)
-            print('auto_encodeur load sucessfuly')
-        except:
-            print("auto_encodeur not load succesfully from"+os.getcwd()+load_path)
 
     if load_SER_path is not None:
         try:
@@ -146,14 +141,23 @@ with tf.device(comp_device) :
         z = input[:,80:]
         x = normalisation(x)
         with tf.GradientTape() as tape_gen:
-            out   = auto_encodeur(x, z)
-            l_gen = MSE(x, out)
-            #l_gen = ae_optim.get_scaled_loss(l_gen)
+            latent   = gen_latent(x)
+            out_disc = disc(latent)
+            l_disc   = MSE(z, out_disc)
 
-        tr_var   = auto_encodeur.trainable_variables
-        grad_gen = tape_gen.gradient(l_gen, tr_var)
-        #grad_gen = ae_optim.get_unscaled_gradients(grad_gen)
-        ae_optim.apply_gradients(zip(grad_gen, tr_var))
+            out_gen = gen(latent,z)
+            l_rec   = MSE(x, out_gen)
+
+
+        tr_gen_var = (*gen_latent.trainable_variables, *gen.trainable_variables)
+        grad_gen = tape_gen.gradient(l_rec, tr_gen_var)
+        gen_optim.apply_gradients(zip(grad_gen, tr_gen_var))
+
+        tr_gen_var = (*gen_latent.trainable_variables, *gen.trainable_variables)
+        grad_gen = tape_gen.gradient(l_disc, tr_gen_var)
+        gen_optim.apply_gradients(zip(grad_gen, tr_gen_var))
+
+        
         mcd   = MCD_1D(out, x)
         return {"loss_generateur": l_gen, "MCD":mcd}        
     
