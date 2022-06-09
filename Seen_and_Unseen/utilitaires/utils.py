@@ -81,7 +81,7 @@ def emotion_echantillon(FILEPATH):
     gr_emotion = dataloader.dataset_emotion # (5,~) nom_fichier listé par émotion
     ret = []
     for g in gr_emotion:
-        tf.random.shuffle(g)
+        g = tf.random.shuffle(g)
         x = pd.read_pickle(g[0])
         x = tf.transpose(x, perm = [1,0])
         x = normalisation(x)

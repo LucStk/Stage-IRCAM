@@ -309,7 +309,7 @@ class Discriminateur_conv2D(tf.keras.Model):
     x = self.conv(x)
     x = self.flatten(x)
     x = self.dense(x)
-    x = ks.activations.sigmoid(x)
+    x = ks.activations.sigmoid(x)*10
     return x
 
 
@@ -344,30 +344,19 @@ class Encodeur_SAU(tf.keras.Model):
     act_conv  = act.elu # act.swish
     self.conv = tf.keras.models.Sequential([
         layers.InputLayer(input_shape=(80,1)),
-        layers.Conv1D(16, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=2),
-        layers.BatchNormalization(),
-        
-        layers.Conv1D(32, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=2),
-        layers.BatchNormalization(),
-        
-        layers.Conv1D(64, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=2),
-        layers.BatchNormalization(),
 
-        layers.Conv1D(128, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=2),
+        layers.Conv1D(256, 20, activation=act_conv),
+        layers.AveragePooling1D(pool_size=7),
+        layers.BatchNormalization(),
     ])
-    self.h_mean = layers.Conv1D(32, 2, activation=act_conv)
-    self.h_std  = layers.Conv1D(32, 2, activation=act.tanh)
-
+    self.h_mean = layers.Conv1D(3, 8, activation=act_conv)
+    self.h_std  = layers.Conv1D(3, 8) #, activation = act.tanh
 
   def call(self, x):
     x = tf.expand_dims(x, axis = -1)
     x = self.conv(x)
     mean = self.h_mean(x)
-    std  = self.h_std(x)*2
+    std  = self.h_std(x)
     return mean, std 
     
 
@@ -376,24 +365,17 @@ class Decodeur_SAU(tf.keras.Model):
     super(Decodeur_SAU, self).__init__()
     act_conv   = act.elu # act.swish
     self.convT = tf.keras.models.Sequential([
-        layers.InputLayer(input_shape=(1, 16+32)),
-        layers.UpSampling1D(size=2),
-        layers.Conv1DTranspose(64, 3, activation=act_conv),
-        layers.BatchNormalization(),
+        layers.InputLayer(input_shape=(1, 8+4)),
 
-        layers.UpSampling1D(size=2),
-        layers.Conv1DTranspose(32, 4, activation=act_conv),
+        layers.Conv1DTranspose(256, 4, activation=act_conv),
         layers.BatchNormalization(),
-        
-        layers.UpSampling1D(size=2),
-        layers.Conv1DTranspose(16, 4, activation=act_conv),
-        layers.BatchNormalization(),
+        layers.UpSampling1D(size=4),
 
-        layers.UpSampling1D(size=3),
-        layers.Conv1DTranspose(8, 3, activation=act_conv),
+        layers.Conv1DTranspose(128, 4, activation=act_conv),
         layers.BatchNormalization(),
+        layers.UpSampling1D(size=4),
 
-        layers.Conv1DTranspose(1, 4, activation=act_conv),
+        layers.Conv1DTranspose(1, 5, activation=act_conv),
     ])
 
   def call(self, x):
@@ -411,17 +393,19 @@ class Auto_Encodeur_SAU(Auto_Encodeur_rnn):
     self.encodeur = Encodeur_SAU()
     self.decodeur = Decodeur_SAU()
 
-  def call(self,x, phi):
+  def call(self,x, phi, return_latent=False):
     """
     x   : (b*lenght, 128) non normalisé
     phi : (b*lenght, 128)
     """
     phi      = tf.expand_dims(phi, axis=1)
     latent,_ = self.encodeur(x)
-    latent   = tf.concat((phi,latent), axis = 2)
+    latent2   = tf.concat((phi,latent), axis = 2)
 
-    out    = self.decodeur(latent)
-    return out
+    out    = self.decodeur(latent2)
+    if not return_latent:
+      return out
+    return out, latent
 
 class VAE_SAU(Auto_Encodeur_rnn):
   def __init__(self):
@@ -436,7 +420,7 @@ class VAE_SAU(Auto_Encodeur_rnn):
     """
     phi      = tf.expand_dims(phi, axis=1)
     mean,logstd = self.encodeur(x)
-    latent   = tf.random.normal(mean.shape, mean=mean, stddev=tf.math.exp(logstd))
+    latent   = tf.random.normal(mean.shape, mean=mean, stddev=tf.math.exp(logstd/2))
     latent   = tf.concat((phi,latent), axis = 2)
     out      = self.decodeur(latent)
     return out, mean, logstd
@@ -448,8 +432,8 @@ class VAE_SAU(Auto_Encodeur_rnn):
     """
     phi      = tf.expand_dims(phi, axis=1)
     latent,_ = self.encodeur(x)
-    latent   = tf.concat((phi,latent), axis = 2)
-    out      = self.decodeur(latent)
+    latent_   = tf.concat((phi,latent), axis = 2)
+    out      = self.decodeur(latent_)
     return out
 
 
@@ -460,24 +444,12 @@ class Discriminateur_SAU(tf.keras.Model):
     act_dense = act.elu
     self.conv = tf.keras.models.Sequential([
       layers.InputLayer(input_shape=(80,1)),
-      layers.Conv1D(4, 5, activation=act_conv),
+      layers.Conv1D(64, 5, activation=act_conv),
       layers.MaxPool1D(pool_size=2),
       layers.BatchNormalization(),
-      layers.Dropout(.2),
 
-      layers.Conv1D(8, 5, activation=act_conv),
-      layers.MaxPool1D(pool_size=2),
-      layers.BatchNormalization(),
-      layers.Dropout(.2),
-      
-      layers.Conv1D(16, 5, activation=act_conv),
-      layers.MaxPool1D(pool_size=2),
-      layers.BatchNormalization(),
-      layers.Dropout(.2),
-
-      layers.Conv1D(32, 6, activation=act_conv),
+      layers.Conv1D(128, 38, activation=act_conv),
     ])
-
 
     self.H = tf.keras.models.Sequential([
       layers.Flatten(),
@@ -528,7 +500,7 @@ class SER(tf.keras.Model):
         layers.Conv2D(128, 4, activation=act_conv),
     ])
     self.bi_lstm = layers.Bidirectional(
-                            layers.GRU(8,
+                            layers.GRU(4,
                                         activation = act_rnn, 
                                         return_sequences=True,
                                         dropout=0.3))  
@@ -572,134 +544,31 @@ class SER(tf.keras.Model):
       f = file+'/SER_weights/'+str(step)
     super().load_weights(f)
 
-#################################################################
-#                         Domaine séparation                    #
-# ###############################################################
-class generateur_DS(tf.keras.Model):
+
+@tf.custom_gradient
+def grad_reverse(x):
+    y = tf.identity(x)
+    def custom_grad(dy):
+        return -dy
+    return y, custom_grad
+
+class Discriminateur_DS(tf.keras.Model):
   def __init__(self):
-    super(generateur_DS, self).__init__()
+    super(Discriminateur_DS, self).__init__()
     act_conv   = act.elu # act.swish
-    self.convT = tf.keras.models.Sequential([
-        layers.InputLayer(input_shape=(1, 16+80)),
-        layers.Dropout(0.2),
-
-        layers.UpSampling1D(size=5),
-        layers.Conv1DTranspose(32, 4, activation=act_conv),
-        layers.BatchNormalization(),
-        layers.Dropout(0.2),
-
-        layers.UpSampling1D(size=4),
-        layers.Conv1DTranspose(16, 5, activation=act_conv),
-        layers.BatchNormalization(),
-
-        layers.UpSampling1D(size=2),
-        layers.Conv1DTranspose(8, 5, activation=act_conv),
-        layers.BatchNormalization(),
-
-        layers.Conv1DTranspose(1, 5, activation=act_conv),
-    ])
-
-  def call(self, x,phi):
-    """
-    Génére une sortie de taille size à partir d'un espace latent (batch, latent_size)
-    """
-    phi = tf.expand_dims(phi, axis = 1)
-    x   = tf.expand_dims(x,   axis = 1)
-    x   = tf.concat((phi,x), axis = 2)
-
-    x   = self.convT(x)
-    x   = tf.squeeze(x)
-    x   = tf.math.sigmoid(x)*(MAX_normalised-MIN_normalised)+MIN_normalised
-    return x
-
-  def save_weights(self, file, step):
-    super.save_weights(file+'/gen_DS_checkpoint/'+str(step))
-
-
-  def load_weights(self, file,  step = None):
-    if step is None:
-      f_enco = tf.train.latest_checkpoint(file+'/gen_DS_checkpoint')
-    else:
-      f_enco = file+'/gen_DS_checkpoint/'+str(step)
-
-    super.load_weights(f_enco)
-
-
-class latent_DS(tf.keras.Model):
-  def __init__(self):
-    super(generateur_DS, self).__init__()
-    act_conv   = act.elu # act.swish
-    self.convT = tf.keras.models.Sequential([
-        layers.InputLayer(input_shape=(1, 80)),
-        layers.Dropout(0.2),
-
-        layers.UpSampling1D(size=5),
-        layers.Conv1DTranspose(32, 4, activation=act_conv),
-        layers.BatchNormalization(),
-        layers.Dropout(0.2),
-
-        layers.UpSampling1D(size=4),
-        layers.Conv1DTranspose(16, 5, activation=act_conv),
-        layers.BatchNormalization(),
-
-        layers.UpSampling1D(size=2),
-        layers.Conv1DTranspose(8, 5, activation=act_conv),
-        layers.BatchNormalization(),
-
-        layers.Conv1DTranspose(1, 5, activation=act_conv),
+    self.conv = tf.keras.models.Sequential([
+      #layers.Dense(30, activation=act.relu),
+      layers.Dense(20, activation=act.relu),      
+      layers.Dense(5)
     ])
 
   def call(self, x):
     """
     Génére une sortie de taille size à partir d'un espace latent (batch, latent_size)
     """
-    x   = tf.expand_dims(x,   axis = 1)
-    x   = self.convT(x)
-    x   = tf.squeeze(x)
-    x   = tf.math.sigmoid(x)*(MAX_normalised-MIN_normalised)+MIN_normalised
-    return x
-
-  def save_weights(self, file, step):
-    super.save_weights(file+'/latent_DS_checkpoint/'+str(step))
-
-
-  def load_weights(self, file,  step = None):
-    if step is None:
-      f_enco = tf.train.latest_checkpoint(file+'/latent_DS_checkpoint')
-    else:
-      f_enco = file+'/latent_DS_checkpoint/'+str(step)
-
-    super.load_weights(f_enco)
-
-
-class discriminateur_DS(tf.keras.Model):
-  def __init__(self):
-    super(generateur_DS, self).__init__()
-    act_conv   = act.elu # act.swish
-    self.convT = tf.keras.models.Sequential([
-        layers.InputLayer(input_shape=(1, 80)),
-        
-        layers.UpSampling1D(size=2),
-        layers.Conv1DTranspose(32, 2, activation=act_conv),
-        layers.BatchNormalization(),
-
-        layers.UpSampling1D(size=2),
-        layers.Conv1DTranspose(16, 2, activation=act_conv),
-        layers.BatchNormalization(),
-
-        layers.UpSampling1D(size=2),
-        layers.Conv1DTranspose(1, 3, activation=act_conv),
-        layers.BatchNormalization(),
-    ])
-
-  def call(self, x):
-    """
-    Génére une sortie de taille size à partir d'un espace latent (batch, latent_size)
-    """
-    x   = tf.expand_dims(x,   axis = 1)
-    x   = self.convT(x)
-    x   = tf.squeeze(x)
-    x   = tf.math.sigmoid(x)*(MAX_normalised-MIN_normalised)+MIN_normalised
+    #x = grad_reverse(x)
+    x = tf.squeeze(x)
+    x = self.conv(x)
     return x
 
   def save_weights(self, file, step):

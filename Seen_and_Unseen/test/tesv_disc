@@ -20,49 +20,46 @@ act_dense = act.elu
 
 conv = tf.keras.models.Sequential([
         layers.InputLayer(input_shape=(80,1)),
-        layers.Conv1D(4, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=2),
-        layers.BatchNormalization(),
-        
-        layers.Conv1D(8, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=2),
-        layers.BatchNormalization(),
-        
-        layers.Conv1D(16, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=2),
-        layers.BatchNormalization(),
 
-        layers.Conv1D(32, 4, activation=act_conv),
-        layers.MaxPool1D(pool_size=2),
+        layers.Conv1D(256, 20, activation=act_conv),
+        layers.MaxPool1D(pool_size=7),
+        layers.BatchNormalization(),
         
-        layers.Conv1D(64, 2, activation=act_conv),
+        layers.Conv1D(64, 8, activation=act_conv),
     ])
 
 
-x = tf.ones((10,80,1))
+x = tf.ones((10,32,1))
+
+conv = tf.keras.models.Sequential([
+        layers.InputLayer(input_shape=(32,1)),
+        layers.Conv1D(128, 4, activation=act_conv),
+        layers.MaxPool1D(pool_size=2),
+        layers.BatchNormalization(),
+
+        layers.Conv1D(64, 4, activation=act_conv),
+        layers.MaxPool1D(pool_size=2),
+        layers.BatchNormalization(),
+
+        layers.Conv1D(16, 5, activation=act_conv),
+    ])
+
 conv(x).shape
 
-x = tf.ones((10,1,16+64))
+x = tf.ones((10,1,16+10))
 
 convT = tf.keras.models.Sequential([
-        layers.InputLayer(input_shape=(1, 16+64)),
-        layers.UpSampling1D(size=2),
-        layers.Conv1DTranspose(64, 3, activation=act_conv),
-        layers.BatchNormalization(),
+        layers.InputLayer(input_shape=(1, 16+10)),
 
-        layers.UpSampling1D(size=2),
-        layers.Conv1DTranspose(32, 4, activation=act_conv),
+        layers.Conv1DTranspose(256, 4, activation=act_conv),
         layers.BatchNormalization(),
-        
-        layers.UpSampling1D(size=2),
-        layers.Conv1DTranspose(16, 4, activation=act_conv),
-        layers.BatchNormalization(),
+        layers.UpSampling1D(size=4),
 
-        layers.UpSampling1D(size=3),
-        layers.Conv1DTranspose(8, 3, activation=act_conv),
+        layers.Conv1DTranspose(128, 4, activation=act_conv),
         layers.BatchNormalization(),
+        layers.UpSampling1D(size=4),
 
-        layers.Conv1DTranspose(1, 4, activation=act_conv),
+        layers.Conv1DTranspose(1, 5, activation=act_conv),
     ])
 
 convT(x).shape

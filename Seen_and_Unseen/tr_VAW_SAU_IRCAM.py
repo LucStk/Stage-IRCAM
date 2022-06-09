@@ -1,4 +1,4 @@
-#python tr_SAU_IRCAM.py --name=new_SAU --lock=soft --load_SER=resize_128b_8__20220504-134323
+#resize_128b_8__20220504-134323
 
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
@@ -58,7 +58,8 @@ LANGAGE    = "english"
 
 EPOCH = 100
 LR_AE   = 1e-3
-LR_DISC = 1e-3
+LR_DISC = 1e-4
+LR_DOMAIN = 1e-3
 TEST_EPOCH = 1/2
 
 load_path     = ov.get('--load')
@@ -72,16 +73,17 @@ with tf.device(comp_device) :
         decay_steps=10000,
         decay_rate=0.9)
 
-    ae_optim   = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
-    disc_optim = tf.keras.optimizers.RMSprop(learning_rate = LR_DISC)
+    ae_optim   = tf.keras.optimizers.Adam(learning_rate = LR_AE)
+    disc_optim = tf.keras.optimizers.Adam(learning_rate = LR_DISC)
+    domain_optim = tf.keras.optimizers.Adam(learning_rate = LR_DOMAIN)
 
-    auto_encodeur = Auto_Encodeur_SAU()
-    disc          = Discriminateur_SAU()
-    disc_DS       = Discriminateur_DS()
+    auto_encodeur  = VAE_SAU()
+    discriminateur = Discriminateur_SAU()
+    domain_adaptator = Discriminateur_DS()
     ser = SER()
 
-    BCE = tf.keras.losses.BinaryCrossentropy(reduction=tf.keras.losses.Reduction.AUTO)
-    MSE = tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.AUTO)
+    BCE = tf.keras.losses.BinaryCrossentropy(reduction=tf.keras.losses.Reduction.SUM)
+    MSE = tf.keras.losses.MeanSquaredError(  reduction=tf.keras.losses.Reduction.SUM)
     ################################################################
     #                         Loading Model                        #
     ################################################################
@@ -121,11 +123,11 @@ with tf.device(comp_device) :
 
 
     #Création des summary
-    log_dir        = "logs/DS_logs/"+ov.get("--name") + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_dir        = "logs/VAW_GAN_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") +"_"+ ov.get("--name")
     summary_writer = tf.summary.create_file_writer(log_dir)
     
     #Préparation enregistrement
-    audio_log_dir        = "logs/audio_logs/DS"+ov.get("--name") + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    audio_log_dir        = "logs/audio_logs/VAW/VAW" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + "_" + ov.get("--name")
     audio_summary_writer = tf.summary.create_file_writer(audio_log_dir)
     
     mel_inv = Mel_inverter()
@@ -145,40 +147,82 @@ with tf.device(comp_device) :
 
 
     @tf.function(jit_compile=True)
-    def train(input):
-        x = input[:,:80]
-        z = input[:,80:]
+    def train(x,y,z):
         x = normalisation(x)
-        with tf.GradientTape() as tape_gen, tf.GradientTape() as tape_DS:
-            out,latent = auto_encodeur(x, z,return_latent=True)
-            l_gen      = MSE(x, out)
-            z_hat      = disc_DS(latent)
-            l_disc_DS  = MSE(z, z_hat)
+        y = tf.one_hot(y, 5)
+        z = tf.squeeze(z)
 
-        tr_var   = auto_encodeur.trainable_variables
-        grad_gen = tape_gen.gradient(l_gen, tr_var)
-        ae_optim.apply_gradients(zip(grad_gen, tr_var))
+        # Apprentissage AE pour tromper le générateur
+        with tf.GradientTape() as tape_gen,tf.GradientTape() as tape_domain, tf.GradientTape() as tape_disc:
+            out_ae, mean, logstd  = auto_encodeur(x, z)
 
-        tr_disc_DS = [*auto_encodeur.encodeur.trainable_variables, *disc_DS.trainable_variables]
-        grad_DS    = tape_DS.gradient(l_disc_DS, tr_disc_DS)
-        disc_optim.apply_gradients(zip(grad_DS, tr_disc_DS))
+            d_false = discriminateur(out_ae)
+            l_gen   = BCE(tf.ones_like(d_false), d_false)/d_false.shape[-1]
 
-        mcd   = MCD_1D(out, x)  
-        return {"loss_generateur": l_gen, "MCD":mcd, "loss_DS": l_disc_DS}
+            l_domaine  = BCE(y,domain_adaptator(tf.stop_gradient(mean)))/d_false.shape[0]
+            #l_domaine_inv = BCE(1-y,domain_adaptator(mean))/d_false.shape[0]
+            
+            d_true  = discriminateur(x)
+            l_disc  = (BCE(tf.ones_like(d_true)  , d_true) + BCE(tf.zeros_like(d_false), d_false))/(2*d_false.shape[-1])
+
+            l_mse = tf.reduce_mean(MSE(x,out_ae))
+            KL    = 0.5*tf.reduce_sum(tf.math.exp(logstd) + mean**2 -1 - logstd , axis = 2)
+            l_kl  = tf.reduce_mean(KL)
+            
+            l_ae = l_mse + 1e-1*l_kl + 1e-2*l_gen #+ 1e-2*l_domaine_inv
+
+        tr_var_ae = auto_encodeur.trainable_variables
+        grad_gen  = tape_gen.gradient(l_ae  , tr_var_ae)
+        ae_optim.apply_gradients(zip(grad_gen, tr_var_ae))
+
+        tr_var_disc = discriminateur.trainable_variables
+        grad_disc   = tape_disc.gradient(l_disc , tr_var_disc)
+        disc_optim.apply_gradients(zip(grad_disc, tr_var_disc))
+
+        tr_var_domain = domain_adaptator.trainable_variables
+        grad_gen      = tape_domain.gradient(l_domaine  , tr_var_domain)
+        domain_optim.apply_gradients(zip(grad_gen, tr_var_domain))
+        
+        mcd = MCD_1D(out_ae, x)
+        return {"loss_generateur": l_gen,"loss_discriminateur": l_disc, "MCD":mcd }#, "loss_domain": l_domaine}
 
     @tf.function(jit_compile=True)
-    def test(input):
-        x = input[:,:80]
-        z = input[:,80:]
+    def test(x,y,z):
         x = normalisation(x)
+        z = tf.squeeze(z)
 
-        out,latent = auto_encodeur(x, z,return_latent=True)
-        l_gen      = MSE(x, out)
-        z_hat      = disc_DS(latent)
-        l_disc_DS  = MSE(z, z_hat)
+        out_ae, mean, logstd  = auto_encodeur(x, z)
 
-        mcd   = MCD_1D(out, x)  
-        return {"loss_generateur": l_gen, "MCD":mcd, "loss_DS": l_disc_DS}
+        d_false = discriminateur(out_ae)
+
+        l_gen   = BCE(tf.ones_like(d_false), d_false)/d_false.shape[0]
+        
+        acc_domain = tf.reduce_mean(tf.cast(tf.math.argmax(domain_adaptator(mean), axis = 1) == y, dtype = tf.float32))
+            
+        d_true  = discriminateur(x)
+
+        l_disc_true  = BCE(tf.ones_like(d_true)  , d_true)/d_false.shape[0]
+        l_disc_false = BCE(tf.zeros_like(d_false), d_false)/d_false.shape[0]
+
+        l_mse = tf.reduce_mean(MSE(x,out_ae))
+        KL    = 0.5*tf.reduce_sum(tf.math.exp(logstd) + mean**2 -1 - logstd , axis = 2)
+        
+        l_ae = l_mse + tf.reduce_mean(KL) + l_gen
+
+        acc_true  = tf.reduce_mean(tf.cast(d_true > 0.5,  dtype = tf.float32))
+        acc_false = tf.reduce_mean(tf.cast(d_false < 0.5, dtype = tf.float32))
+
+        l_disc  = (BCE(tf.ones_like(d_true)  , d_true) + BCE(tf.zeros_like(d_false), d_false))/(2*d_false.shape[0])
+
+
+        mcd = MCD_1D(out_ae, x)
+        return {"loss_generateur": l_ae,
+                "loss_disc_true": l_disc_true,
+                "loss_disc_false": l_disc_false,
+                "acc_true_discriminateur" :acc_true,
+                "acc_false_discriminateur" :acc_false,
+                "MCD":mcd,
+                "acc_domain": acc_domain}
     
     def write(metric, cpt, type = 'train'):
         with summary_writer.as_default():
@@ -194,7 +238,7 @@ with tf.device(comp_device) :
             for i, emo in enumerate(l_emotion):
                 tmp = np.expand_dims(l_mean_latent_ser[i], axis = 0)
                 phi = np.repeat(tmp, x.shape[0], axis = 0)
-                out  = auto_encodeur(x, phi)
+                out,_,_  = auto_encodeur(x, phi)
                 rec_out = mel_inv.convert(de_normalisation(out))
                 ret['Reconstruct '+emo] = rec_out
 
@@ -203,21 +247,20 @@ with tf.device(comp_device) :
     ###################################################################
     #                            Training                             #
     ###################################################################
-    for cpt, x in enumerate(train_dataloader):
-        metric_train = train(x)
-        if cpt < 100000:
-            train(x)
+
+    for cpt, (x,z,y) in enumerate(train_dataloader):
+        metric_train = train(x,y,z)
 
         if ((cpt +1) % 200) == 0:
             write(metric_train,tf.Variable(cpt,dtype=tf.int64),"train")
         
         if ((cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0):
             print("test")
-            input = test_dataloader[tf.cast(tf.math.floor(tf.random.uniform([1])[0]*len_test_dataloader), dtype = tf.int32)]
-            metric_test = test(input)
+            x,z,y = test_dataloader[tf.cast(tf.math.floor(tf.random.uniform([1])[0]*len_test_dataloader), dtype = tf.int32)]
+            metric_test = test(x,tf.cast(y, dtype= tf.int64),z)
             write(metric_test,cpt, "test")
 
-        if (cpt+1) % (10*len_train_dataloader) == 0:
+        if (cpt+1) % (2*len_train_dataloader) == 0:
             print("rec audio", cpt)
             rec_audios = create_audio()
             with audio_summary_writer.as_default():

@@ -7,7 +7,7 @@ import datetime
 import sys
 import getopt
 
-longoptions = ['lock=', 'load=', 'load_SER=', 'no_metrics=']
+longoptions = ['lock=', 'load=', 'load_SER=', 'no_metrics=', 'name=']
 ov, ra = getopt.getopt(sys.argv[1:], "", longoptions)
 ov = dict(ov)
 
@@ -54,13 +54,12 @@ BATCH_SIZE_TEST  = 100
 SHUFFLE    = True
 LANGAGE    = "english"
 
-EPOCH = 256
 LR_AE = 1e-3
 TEST_EPOCH = 1/2
 
-load_path     = ov.get('--load')
-load_SER_path = ov.get('--load_SER')
-no_metrics    = ov.get('--no_metrics') == "true"
+load_path  = ov.get('--load')
+load_SER   = ov.get('--load_SER')
+no_metrics = ov.get('--no_metrics') == "true"
 
 with tf.device(comp_device) :
 
@@ -70,10 +69,7 @@ with tf.device(comp_device) :
         decay_rate=0.9)
 
     ae_optim  = tf.keras.optimizers.RMSprop(learning_rate = LR_AE)
-    #ae_optim   = tf.keras.mixed_precision.LossScaleOptimizer(ae_optim)
-    
     vae = VAE_SAU()
-    #vae.compile()
 
     ser = SER()
     BCE = tf.keras.losses.BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
@@ -82,11 +78,6 @@ with tf.device(comp_device) :
     #                         Loading Model                        #
     ################################################################
 
-    def VAE_loss(x,x_hat, mean, std):
-        KL = -0.5*tf.reduce_sum(1+ std - tf.math.exp(std) - mean**2)
-        return  tf.reduce_mean(MSE(x,x_hat) + KL)
-
-
     if load_path is not None :
         try:
             vae.load_weights(os.getcwd()+load_path)
@@ -94,12 +85,12 @@ with tf.device(comp_device) :
         except:
             print("vae not load succesfully from"+os.getcwd()+load_path)
 
-    if load_SER_path is not None:
+    if load_SER is not None:
         try:
-            ser.load_weights(os.getcwd()+load_SER_path)
+            ser.load_weights(os.getcwd()+'/logs/SER_logs/'+load_SER)
             print('ser load sucessfuly')
         except:
-            print("ser not load succesfully from"+os.getcwd()+load_SER_path)
+            print("ser not load succesfully from"+os.getcwd()+'/logs/SER_logs/'+load_SER)
             raise
     else:
         raise Exception("No SER load")
@@ -121,11 +112,11 @@ with tf.device(comp_device) :
 
 
     #Création des summary
-    log_dir        = "logs/VAE_logs/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_dir        = "logs/VAE_logs/"+ov.get("--name") + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     summary_writer = tf.summary.create_file_writer(log_dir)
     
     #Préparation enregistrement
-    audio_log_dir        = "logs/audio_logs/VAE" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    audio_log_dir        = "logs/audio_logs/VAE" +ov.get("--name")+ datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     audio_summary_writer = tf.summary.create_file_writer(audio_log_dir)
     
     #
@@ -151,22 +142,35 @@ with tf.device(comp_device) :
         x = normalisation(x)
         with tf.GradientTape() as tape_gen:
             out, mean, logstd  = vae(x, z)
-            l_gen = VAE_loss(x, out, mean, logstd)
+
+            l_mse = tf.reduce_mean(MSE(x,out))
+            KL    = 0.5*tf.reduce_sum(tf.math.exp(logstd) + mean**2 -1 - logstd , axis = 2)
+            l_kl  = 1e-3*tf.reduce_mean(KL)
+
+            l_gen = l_mse + l_kl
 
         tr_var   = vae.trainable_variables
         grad_gen = tape_gen.gradient(l_gen, tr_var)
         ae_optim.apply_gradients(zip(grad_gen, tr_var))
 
+        mean_logstd = tf.reduce_mean(logstd)
         mcd   = MCD_1D(out, x)
-        return {"loss_generateur": l_gen, "MCD":mcd}        
+        return {"loss_generateur" : l_gen,
+                "KL_divergence"   : l_kl,
+                "mse"             : l_mse, 
+                "MCD"             : mcd,
+                "mean_logstd"     : mean_logstd}        
     
     @tf.function(jit_compile=True)
     def test(input):
         x = input[:,:80]
         z = input[:,80:]
         x = normalisation(x)
-        out, mean,std = vae(x, z)
-        l_gen = VAE_loss(x, out, mean, std)
+        out, mean, logstd = vae(x, z)
+        l_mse = tf.reduce_mean(MSE(x,out))
+        KL    = 0.5*tf.reduce_sum(tf.math.exp(logstd) + mean**2 -1 - logstd , axis = 2)
+        l_kl  = 1e-4*tf.reduce_mean(KL)
+        l_gen = l_mse + l_kl
         mcd   = MCD_1D(out, x)
         return {"loss_generateur": l_gen, "MCD":mcd}
 
@@ -193,33 +197,23 @@ with tf.device(comp_device) :
     ###################################################################
     #                            Training                             #
     ###################################################################
-    import contextlib
-    @contextlib.contextmanager
-    def options(options):
-        old_opts = tf.config.optimizer.get_experimental_options()
-        tf.config.optimizer.set_experimental_options(options)
-        try:
-            yield
-        finally:
-            tf.config.optimizer.set_experimental_options(old_opts)
 
-    with options({'constant_folding': True}):
+    
+    for cpt, x in enumerate(train_dataloader):
+        metric_train = train(x)
 
-        for cpt, x in enumerate(train_dataloader):
-            metric_train = train(x)
+        if ((cpt +1) % 100) == 0:
+            write(metric_train,tf.Variable(cpt,dtype=tf.int64),"train")
 
-            if ((cpt +1) % 100) == 0:
-                write(metric_train,tf.Variable(cpt,dtype=tf.int64),"train")
-
-            if (cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
-                print("Test Time", cpt)
-                input = test_dataloader[cpt%len_test_dataloader]
-                metric_test = test(input)
-                write(metric_test, cpt, "test")
-                
-            if (cpt+1) % (10*len_train_dataloader) == 0:
-                print("rec audio", cpt)
-                rec_audios = create_audio()
-                with audio_summary_writer.as_default():
-                    for (k, v) in rec_audios.items():
-                        tf.summary.audio(k,v, 24000, step=cpt) 
+        if (cpt+1)%int(TEST_EPOCH*len_train_dataloader) == 0:
+            print("Test Time", cpt)
+            input = test_dataloader[tf.cast(tf.math.floor(tf.random.uniform([1])[0]*len_test_dataloader), dtype = tf.int32)]
+            metric_test = test(input)
+            write(metric_test, cpt, "test")
+            
+        if (cpt+1) % (10*len_train_dataloader) == 0:
+            print("rec audio", cpt)
+            rec_audios = create_audio()
+            with audio_summary_writer.as_default():
+                for (k, v) in rec_audios.items():
+                    tf.summary.audio(k,v, 24000, step=cpt) 

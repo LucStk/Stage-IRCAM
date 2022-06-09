@@ -59,6 +59,7 @@ LANGAGE    = "english"
 USE_DATA_QUEUE = True
 LR = 1e-3
 TEST_EPOCH = 1/2
+REGISTER_EPOCH = 5
 load_path = ov.get('--load')
 
 with tf.device(comp_device) :
@@ -76,7 +77,7 @@ with tf.device(comp_device) :
             ser.load_weights(os.getcwd()+load_path)
             print('model load sucessfuly')
         except:
-            print("Load not succesful from"+os.getcwd()+load_path)
+            print("Load not succesful from : "+os.getcwd()+load_path)
             raise
 
     print("Data loading")
@@ -91,12 +92,12 @@ with tf.device(comp_device) :
         data_queue.start(workers = 4, max_queue_size=20)
         train_dataloader = data_queue.get()
 
-    log_dir        = "logs/SER_logs/"+ov.get("--name") + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_dir        = "logs/SER_logs/"+ datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+"_"+ov.get("--name")
     summary_writer = tf.summary.create_file_writer(log_dir)
 
 
     print("Training Beging")
-    @tf.function(experimental_relax_shapes=True) #, jit_compile=True)
+    @tf.function(experimental_relax_shapes=True)
     def train(x,y):
         y_ = tf.one_hot(y,5)
         x  = normalisation(x)
@@ -107,7 +108,8 @@ with tf.device(comp_device) :
         tr_var    = ser.trainable_variables
         gradients = tape.gradient(l, tr_var)
         optimizer.apply_gradients(zip(gradients, tr_var))
-        acc  = tf.reduce_mean(tf.cast(tf.equal(y, tf.math.argmax(y_hat, axis = 1,output_type=tf.dtypes.int32)), dtype= tf.float64))
+        maxy_hat = tf.math.argmax(y_hat, axis = 1,output_type=tf.dtypes.int32)
+        acc  = tf.reduce_mean(tf.cast(tf.equal(y, maxy_hat), dtype= tf.float64))
         
         return {"loss_SER": l, "accurcay":acc}
 
@@ -139,8 +141,8 @@ with tf.device(comp_device) :
             metric_test = test(x,y)
             write(metric_test, "test")
 
-        if (cpt+1) % (50*len_train_dataloader) == 0:
+        if (cpt+1) % (REGISTER_EPOCH*len_train_dataloader) == 0:
             print("save")
             #ser.save(log_dir, format(cpt//len_train_dataloader))
-            ser.save_weights(log_dir, format(cpt//len_train_dataloader))
+            ser.save_weights(log_dir, format(cpt))
 

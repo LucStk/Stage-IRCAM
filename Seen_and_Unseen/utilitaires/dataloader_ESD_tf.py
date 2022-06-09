@@ -4,9 +4,24 @@ import pandas as pd
 import tensorflow as tf
 import numpy as np
 from tensorflow.keras.utils import Sequence
+
 from pathlib import Path
 import re
 import math
+
+MEAN_DATASET = -6.0056405
+STD_DATASET  = 2.4420118
+MAX = 3
+MIN = -14
+
+
+def normalisation(x):
+    mask = tf.cast(tf.math.not_equal(x,0), tf.float64)
+    x = (x - MEAN_DATASET)/STD_DATASET #Normalisation
+    x = tf.multiply(tf.cast(x, tf.float64), mask)
+    #x = tf.cast(x, tf.float32)
+    return x
+
 
 def remplissage(x, max, pad = 0):
     """
@@ -191,7 +206,10 @@ class ESD_data_generator_ALL_SAU(Sequence):
         ret    = []
         b_size = 100
         for deb,end in zip(range(0,len(x)+b_size,b_size), range(b_size,len(x)+b_size,b_size)):
-            ret.append(ser.call_latent(auto_padding(x[deb:end])))
+            x_ = auto_padding(x[deb:end])
+            x_ = tf.transpose(x_, (0,2,1))
+            x_ = normalisation(x_)
+            ret.append(ser.call_latent(x_))
             print('|', end="", flush=True)
         print("latent created")
 
@@ -215,11 +233,11 @@ class ESD_data_generator_ALL_SAU(Sequence):
         return math.ceil(len(self.order)/self.batch_size)
 
     def shuffle(self):
-        tf.random.shuffle(self.order)
+        self.order = tf.random.shuffle(self.order)
 
     def on_epoch_end(self):
         if self.sh:
-            tf.random.shuffle(self.order)
+            self.shuffle()
 
 
     def __getitem__(self, idx):
@@ -232,7 +250,7 @@ class ESD_data_generator_ALL_SAU(Sequence):
         x = tf.gather(self.x, indices=indices)
         z = tf.gather(self.z, indices=indices)
         y = tf.gather(self.y, indices=indices)
-        return tf.concat((x,z), axis = 1)
+        return x, z, y 
 
 class ESD_batch_data_generator(Sequence):
     def __init__(self, file_path, batch_size=1,batch_size_2=1, shuffle=True, 

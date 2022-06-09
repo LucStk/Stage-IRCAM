@@ -50,7 +50,7 @@ except:
         except:
             raise Exception('Data not found')
 
-BATCH_SIZE_TRAIN = 156
+BATCH_SIZE_TRAIN = 256
 BATCH_SIZE_TEST  = 100
 SHUFFLE    = True
 LANGAGE    = "english"
